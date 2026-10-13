@@ -1,0 +1,2870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>StudyMate — Admin Dashboard & Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --sidebar-active: #334155;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --info: #0284c7;
+            --info-bg: #e0f2fe;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* -------------------------------------------------------------
+           SIDEBAR NAVIGATION
+           ------------------------------------------------------------- */
+        .admin-sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 14px;
+            flex-shrink: 0;
+            border-right: 1px solid #1e293b;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 10px 18px 10px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 18px;
+        }
+
+        .brand-logo {
+            font-size: 24px;
+            background: rgba(37, 99, 235, 0.2);
+            border: 1px solid #3b82f6;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        .brand-text h2 {
+            font-size: 17px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-text span {
+            font-size: 11px;
+            font-weight: 700;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .nav-group-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+            padding: 10px 10px 6px 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: #94a3b8;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 3px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            transition: all 0.15s ease;
+        }
+
+        .nav-item:hover {
+            color: #ffffff;
+            background: var(--sidebar-hover);
+        }
+
+        .nav-item.active {
+            color: #ffffff;
+            background: var(--primary);
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+        }
+
+        .nav-item-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .admin-profile-card {
+            background: #1e293b;
+            padding: 10px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .admin-avatar {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .admin-info {
+            overflow: hidden;
+        }
+
+        .admin-info .name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .admin-info .role {
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .btn-switch-portal {
+            width: 100%;
+            background: #334155;
+            color: #f1f5f9;
+            border: 1px solid #475569;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+            text-decoration: none;
+            margin-bottom: 6px;
+        }
+
+        .btn-switch-portal:hover {
+            background: #475569;
+            color: #fff;
+        }
+
+        .btn-logout {
+            width: 100%;
+            background: transparent;
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        /* -------------------------------------------------------------
+           MAIN CONTENT AREA
+           ------------------------------------------------------------- */
+        .admin-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .admin-topbar {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .topbar-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .topbar-title h1 {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-container {
+            padding: 24px 28px 40px 28px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        /* Tab Content Containers */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* -------------------------------------------------------------
+           STATS & KPI CARDS
+           ------------------------------------------------------------- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.blue { background: #eff6ff; color: #2563eb; }
+        .stat-icon.green { background: #f0fdf4; color: #16a34a; }
+        .stat-icon.purple { background: #faf5ff; color: #9333ea; }
+        .stat-icon.amber { background: #fffbeb; color: #d97706; }
+        .stat-icon.rose { background: #fff1f2; color: #e11d48; }
+
+        .stat-details {
+            min-width: 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* -------------------------------------------------------------
+           CARDS & PANELS
+           ------------------------------------------------------------- */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* -------------------------------------------------------------
+           FILTER TOOLBAR
+           ------------------------------------------------------------- */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 9px 12px 9px 34px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            background: #fff;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .search-box-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .select-filter {
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fff;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .select-filter:focus {
+            border-color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: var(--text-main);
+            border-color: #cbd5e1;
+        }
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        /* -------------------------------------------------------------
+           DATA TABLES & PAGINATION
+           ------------------------------------------------------------- */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        th {
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        th.sortable {
+            cursor: pointer;
+        }
+        th.sortable:hover {
+            color: var(--primary);
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* Status & Type Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .badge-active { background: var(--success-bg); color: #047857; }
+        .badge-quarantined { background: var(--warning-bg); color: #b45309; }
+        .badge-suspended { background: var(--danger-bg); color: #b91c1c; }
+        .badge-admin { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
+        .badge-student { background: #e0f2fe; color: #0369a1; }
+        .badge-tag { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+        /* Actions in table */
+        .table-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-table {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.12s;
+        }
+
+        .btn-table:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-table-edit { color: #2563eb; border-color: #bfdbfe; background: #eff6ff; }
+        .btn-table-edit:hover { background: #dbeafe; }
+        .btn-table-danger { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+        .btn-table-danger:hover { background: #fee2e2; }
+        .btn-table-warning { color: #d97706; border-color: #fde68a; background: #fffbeb; }
+        .btn-table-warning:hover { background: #fef3c7; }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 4px 4px 4px;
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .page-btn {
+            padding: 5px 10px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: #f1f5f9;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* -------------------------------------------------------------
+           MODALS & CONFIRM DIALOGS
+           ------------------------------------------------------------- */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(2px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+            animation: fadeIn 0.15s ease-out;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 22px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 16px 22px;
+            border-top: 1px solid var(--border);
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        /* -------------------------------------------------------------
+           TOAST NOTIFICATIONS
+           ------------------------------------------------------------- */
+        #admin-toasts {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast-msg {
+            background: #0f172a;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideInRight 0.25s ease-out;
+            max-width: 360px;
+        }
+
+        .toast-msg.success { background: #065f46; border-left: 4px solid #10b981; }
+        .toast-msg.error { background: #991b1b; border-left: 4px solid #ef4444; }
+        .toast-msg.info { background: #1e3a8a; border-left: 4px solid #3b82f6; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Empty & Loading States */
+        .empty-box {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-box-icon { font-size: 36px; margin-bottom: 8px; }
+        .empty-box-title { font-weight: 700; color: var(--text-main); font-size: 14px; margin-bottom: 4px; }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            .admin-sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0; bottom: 0;
+                transition: left 0.25s ease;
+            }
+            .admin-sidebar.open { left: 0; }
+            .mobile-menu-toggle { display: block !important; }
+            .admin-container { padding: 16px; }
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-toasts"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="brand-header">
+            <div class="brand-logo">🛡️</div>
+            <div class="brand-text">
+                <h2>StudyMate</h2>
+                <span>Admin Console</span>
+            </div>
+        </div>
+
+        <div class="nav-group-title">Core Management</div>
+        <button class="nav-item active" data-tab="overview" onclick="switchAdminTab('overview')">
+            <span class="nav-item-icon">📊</span> Overview
+        </button>
+        <button class="nav-item" data-tab="files" onclick="switchAdminTab('files')">
+            <span class="nav-item-icon">📁</span> File Management
+        </button>
+        <button class="nav-item" data-tab="users" onclick="switchAdminTab('users')">
+            <span class="nav-item-icon">👥</span> User Management
+        </button>
+        <button class="nav-item" data-tab="categories" onclick="switchAdminTab('categories')">
+            <span class="nav-item-icon">🏷️</span> Categories & Subjects
+        </button>
+
+        <div class="nav-group-title">Moderation & Audit</div>
+        <button class="nav-item" data-tab="reports" onclick="switchAdminTab('reports')">
+            <span class="nav-item-icon">🚨</span> Reports & Moderation
+            <span class="nav-badge" id="badge-pending-reports" style="display:none;">0</span>
+        </button>
+        <button class="nav-item" data-tab="logs" onclick="switchAdminTab('logs')">
+            <span class="nav-item-icon">📜</span> Activity Logs
+        </button>
+
+        <div class="nav-group-title">System & Storage</div>
+        <button class="nav-item" data-tab="storage" onclick="switchAdminTab('storage')">
+            <span class="nav-item-icon">💾</span> Storage Scanner
+        </button>
+        <button class="nav-item" data-tab="settings" onclick="switchAdminTab('settings')">
+            <span class="nav-item-icon">⚙️</span> Settings
+        </button>
+
+        <div class="sidebar-footer">
+            <div class="admin-profile-card">
+                <div class="admin-avatar" id="admin-avatar-initial">A</div>
+                <div class="admin-info">
+                    <div class="name" id="admin-display-name">Administrator</div>
+                    <div class="role" id="admin-display-role">Admin Control</div>
+                </div>
+            </div>
+            <a href="/" class="btn-switch-portal">🎓 Student Portal</a>
+            <button class="btn-logout" onclick="adminLogout()">🚪 Sign Out</button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <div class="topbar-title">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1 id="topbar-header-text">Dashboard Overview</h1>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn btn-secondary btn-sm" onclick="refreshCurrentTab()">🔄 Refresh</button>
+                <a href="/" class="btn btn-primary btn-sm">Browse as Student</a>
+            </div>
+        </header>
+
+        <div class="admin-container">
+
+            <!-- =========================================================
+                 TAB 1: OVERVIEW DASHBOARD
+                 ========================================================= -->
+            <section id="tab-overview" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📚</div>
+                        <div class="stat-details">
+                            <div class="stat-label">Total Files</div>
+                            <div class="stat-number" id="stat-total-files">0</div>
+                            <div class="stat-sub" id="stat-uploads-today">0 uploaded today</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">👥</div>
+                        <div class="stat-details">
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-number" id="stat-total-users">0</div>
+                            <div class="stat-sub">Active Students & Admins</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">💾</div>
+                        <div class="stat-details">
+                            <div class="stat-label">Total Storage</div>
+                            <div class="stat-number" id="stat-total-storage">0 MB</div>
+                            <div class="stat-sub">DB Indexed Size</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon amber">🚨</div>
+                        <div class="stat-details">
+                            <div class="stat-label">Pending Reports</div>
+                            <div class="stat-number" id="stat-pending-reports">0</div>
+                            <div class="stat-sub">Awaiting review</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon rose">⚠️</div>
+                        <div class="stat-details">
+                            <div class="stat-label">Missing Files</div>
+                            <div class="stat-number" id="stat-missing-files">0</div>
+                            <div class="stat-sub">Files missing from disk</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                    <!-- Most Popular Study Materials -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">⭐ Popular Study Materials</div>
+                                <div class="card-desc">Ranked by downloads and favorites</div>
+                            </div>
+                        </div>
+                        <div id="overview-popular-list">
+                            <div class="empty-box">Loading popular materials...</div>
+                        </div>
+                    </div>
+
+                    <!-- Most Active Users -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🏆 Top Contributors</div>
+                                <div class="card-desc">Users with most uploaded materials</div>
+                            </div>
+                        </div>
+                        <div id="overview-active-users">
+                            <div class="empty-box">Loading contributors...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Administrative Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">📜 Recent Audit Events</div>
+                            <div class="card-desc">Latest actions taken by administrators</div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="switchAdminTab('logs')">View Full Log</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Admin</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Details</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overview-audit-table">
+                                <tr><td colspan="5" style="text-align:center;">Loading audit trail...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 2: COMPLETE FILE MANAGEMENT
+                 ========================================================= -->
+            <section id="tab-files" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">📁 All Uploaded Study Materials</div>
+                            <div class="card-desc">Search, filter, rename, edit, quarantine, and delete study files</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="exportFilesCSV()">📥 Export CSV</button>
+                            <button class="btn btn-danger btn-sm" id="btn-bulk-delete" style="display:none;" onclick="handleBulkDelete()">🗑️ Delete Selected</button>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <span class="search-box-icon">🔍</span>
+                            <input type="text" id="files-search" placeholder="Search by title, subject, topic, uploader..." oninput="debounceFilesSearch()">
+                        </div>
+                        <select class="select-filter" id="files-filter-subject" onchange="loadFiles(1)">
+                            <option value="All">All Subjects</option>
+                        </select>
+                        <select class="select-filter" id="files-filter-type" onchange="loadFiles(1)">
+                            <option value="All">All Types</option>
+                            <option value="Notes">Notes</option>
+                            <option value="Previous Year Paper">Previous Year Paper</option>
+                            <option value="Assignment">Assignment</option>
+                            <option value="PPT">PPT</option>
+                            <option value="Book">Book</option>
+                            <option value="Lab Manual">Lab Manual</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <select class="select-filter" id="files-filter-status" onchange="loadFiles(1)">
+                            <option value="All">All Statuses</option>
+                            <option value="active">Active Only</option>
+                            <option value="quarantined">Quarantined Only</option>
+                        </select>
+                        <select class="select-filter" id="files-sort" onchange="loadFiles(1)">
+                            <option value="id-desc">Newest First</option>
+                            <option value="id-asc">Oldest First</option>
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="size-desc">Largest Size</option>
+                            <option value="downloads-desc">Most Downloads</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" onclick="resetFileFilters()">Reset</button>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;"><input type="checkbox" id="check-all-files" onchange="toggleSelectAllFiles(this)"></th>
+                                    <th>Title</th>
+                                    <th>Subject / Topic</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th>Downloads</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="files-table-body">
+                                <tr><td colspan="10" style="text-align:center;">Loading materials...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-container">
+                        <div id="files-page-info">Showing 0 of 0 materials</div>
+                        <div class="pagination-controls">
+                            <button class="page-btn" id="files-prev-btn" onclick="prevFilesPage()">Previous</button>
+                            <span id="files-curr-page" style="font-weight:700;">1</span>
+                            <button class="page-btn" id="files-next-btn" onclick="nextFilesPage()">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 3: USER MANAGEMENT
+                 ========================================================= -->
+            <section id="tab-users" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">👥 User Accounts & Roles</div>
+                            <div class="card-desc">Manage student accounts, role promotions, and suspensions</div>
+                        </div>
+                    </div>
+
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <span class="search-box-icon">🔍</span>
+                            <input type="text" id="users-search" placeholder="Search by username, full name, email..." oninput="debounceUsersSearch()">
+                        </div>
+                        <select class="select-filter" id="users-filter-role" onchange="loadUsers(1)">
+                            <option value="All">All Roles</option>
+                            <option value="Student">Students Only</option>
+                            <option value="Admin">Admins Only</option>
+                        </select>
+                        <select class="select-filter" id="users-filter-status" onchange="loadUsers(1)">
+                            <option value="All">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" onclick="resetUserFilters()">Reset</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Uploads</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr><td colspan="9" style="text-align:center;">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-container">
+                        <div id="users-page-info">Showing 0 of 0 users</div>
+                        <div class="pagination-controls">
+                            <button class="page-btn" id="users-prev-btn" onclick="prevUsersPage()">Previous</button>
+                            <span id="users-curr-page" style="font-weight:700;">1</span>
+                            <button class="page-btn" id="users-next-btn" onclick="nextUsersPage()">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 4: CATEGORIES & SUBJECTS
+                 ========================================================= -->
+            <section id="tab-categories" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">🏷️ Subject Categories</div>
+                            <div class="card-desc">Manage study material subjects, organize notes, and merge duplicates</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="openMergeCategoryModal()">🔀 Merge Subjects</button>
+                            <button class="btn btn-primary btn-sm" onclick="openAddCategoryModal()">➕ Add Category</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Subject Name</th>
+                                    <th>Code</th>
+                                    <th>Semester</th>
+                                    <th>Materials Count</th>
+                                    <th>Description</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-table-body">
+                                <tr><td colspan="7" style="text-align:center;">Loading categories...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 5: REPORTS & MODERATION
+                 ========================================================= -->
+            <section id="tab-reports" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">🚨 Student Reports & Moderation</div>
+                            <div class="card-desc">Review issues flagged by students (broken files, incorrect notes, duplicates)</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <select class="select-filter" id="reports-filter-status" onchange="loadReports(1)">
+                                <option value="All">All Reports</option>
+                                <option value="pending" selected>Pending Only</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="dismissed">Dismissed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Material Title</th>
+                                    <th>Reason</th>
+                                    <th>Reporter</th>
+                                    <th>Details</th>
+                                    <th>Status</th>
+                                    <th>Reported At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body">
+                                <tr><td colspan="8" style="text-align:center;">Loading moderation reports...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-container">
+                        <div id="reports-page-info">Showing 0 of 0 reports</div>
+                        <div class="pagination-controls">
+                            <button class="page-btn" id="reports-prev-btn" onclick="prevReportsPage()">Previous</button>
+                            <span id="reports-curr-page" style="font-weight:700;">1</span>
+                            <button class="page-btn" id="reports-next-btn" onclick="nextReportsPage()">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 6: ACTIVITY LOGS & AUDIT TRAIL
+                 ========================================================= -->
+            <section id="tab-logs" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">📜 Administrative Audit Trail</div>
+                            <div class="card-desc">Immutable log of administrative operations, renames, and deletions</div>
+                        </div>
+                    </div>
+
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <span class="search-box-icon">🔍</span>
+                            <input type="text" id="logs-search" placeholder="Search by admin name, action, details..." oninput="debounceLogsSearch()">
+                        </div>
+                        <select class="select-filter" id="logs-filter-action" onchange="loadLogs(1)">
+                            <option value="All">All Actions</option>
+                            <option value="FILE_RENAME">File Rename</option>
+                            <option value="FILE_DELETE">File Delete</option>
+                            <option value="FILE_METADATA_UPDATE">Metadata Update</option>
+                            <option value="FILE_QUARANTINE">Quarantine</option>
+                            <option value="USER_STATUS_CHANGE">User Status Change</option>
+                            <option value="USER_ROLE_CHANGE">Role Change</option>
+                            <option value="USER_DELETE">User Delete</option>
+                            <option value="CATEGORY_CREATE">Category Create</option>
+                            <option value="REPORT_RESOLVE">Report Resolve</option>
+                            <option value="STORAGE_SCAN">Storage Scan</option>
+                            <option value="SETTINGS_UPDATE">Settings Update</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" onclick="resetLogFilters()">Reset</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Admin</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body">
+                                <tr><td colspan="7" style="text-align:center;">Loading audit logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-container">
+                        <div id="logs-page-info">Showing 0 of 0 log entries</div>
+                        <div class="pagination-controls">
+                            <button class="page-btn" id="logs-prev-btn" onclick="prevLogsPage()">Previous</button>
+                            <span id="logs-curr-page" style="font-weight:700;">1</span>
+                            <button class="page-btn" id="logs-next-btn" onclick="nextLogsPage()">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 7: STORAGE ANALYSIS & CONSISTENCY SCANNER
+                 ========================================================= -->
+            <section id="tab-storage" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">💾 Storage Management & Health</div>
+                            <div class="card-desc">Audit physical disk usage, identify missing files, and scan for orphaned files</div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="runStorageScan()">🔍 Run Consistency Scan</button>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon purple">🗄️</div>
+                            <div class="stat-details">
+                                <div class="stat-label">Database Recorded Size</div>
+                                <div class="stat-number" id="storage-db-size">0 MB</div>
+                                <div class="stat-sub" id="storage-db-count">0 materials</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">💿</div>
+                            <div class="stat-details">
+                                <div class="stat-label">Disk Storage Usage</div>
+                                <div class="stat-number" id="storage-disk-size">0 MB</div>
+                                <div class="stat-sub" id="storage-disk-count">0 files in uploads/</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon rose">⚠️</div>
+                            <div class="stat-details">
+                                <div class="stat-label">Missing on Disk</div>
+                                <div class="stat-number" id="storage-missing-count">0</div>
+                                <div class="stat-sub">Broken file links</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon amber">📦</div>
+                            <div class="stat-details">
+                                <div class="stat-label">Orphaned Files</div>
+                                <div class="stat-number" id="storage-orphaned-count">0</div>
+                                <div class="stat-sub">Files with no DB record</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scan Results Section (shown after scan) -->
+                    <div id="scan-results-box" style="display:none; margin-top:20px;">
+                        <h4 style="font-size:14px; font-weight:800; margin-bottom:12px;">Consistency Scan Findings:</h4>
+                        <div id="scan-details-content"></div>
+                    </div>
+
+                    <!-- Largest Files in System -->
+                    <div style="margin-top:24px;">
+                        <h4 style="font-size:14px; font-weight:800; margin-bottom:12px;">Top 5 Largest Files in Storage:</h4>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Subject</th>
+                                        <th>Size</th>
+                                        <th>Path</th>
+                                        <th>Date Added</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="storage-largest-table">
+                                    <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =========================================================
+                 TAB 8: APPLICATION SETTINGS
+                 ========================================================= -->
+            <section id="tab-settings" class="tab-content">
+                <div class="card" style="max-width: 680px;">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">⚙️ Application Settings</div>
+                            <div class="card-desc">Configure upload restrictions, pagination, and student portal access</div>
+                        </div>
+                    </div>
+
+                    <form id="settings-form" onsubmit="handleSaveSettings(event)">
+                        <div class="form-group">
+                            <label class="form-label">Maximum Upload Size (MB)</label>
+                            <input type="number" class="form-input" id="setting-max-size" min="1" max="200" required>
+                            <span style="font-size:11px; color:var(--text-muted);">Max permitted size for student study material uploads.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Allowed File Extensions</label>
+                            <input type="text" class="form-input" id="setting-allowed-ext" required>
+                            <span style="font-size:11px; color:var(--text-muted);">Comma-separated (e.g. pdf, ppt, pptx, doc, docx, txt, zip, png, jpg).</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Default Table Pagination</label>
+                            <select class="form-select" id="setting-pagination">
+                                <option value="10">10 items per page</option>
+                                <option value="25">25 items per page</option>
+                                <option value="50">50 items per page</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Allow Student Self-Registration</label>
+                            <select class="form-select" id="setting-allow-reg">
+                                <option value="1">Enabled (Students can register)</option>
+                                <option value="0">Disabled (Only Admin can create accounts)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Student Portal Maintenance Mode</label>
+                            <select class="form-select" id="setting-maintenance">
+                                <option value="0">Normal Operation</option>
+                                <option value="1">Maintenance Mode (Block student uploads)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="btn-save-settings">💾 Save Settings</button>
+                    </form>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- =============================================================
+         MODALS
+         ============================================================= -->
+
+    <!-- RENAME FILE MODAL -->
+    <div class="modal-backdrop" id="modal-rename">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✏️ Rename Study Material</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-rename')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rename-mat-id">
+                <div class="form-group">
+                    <label class="form-label">Display Title *</label>
+                    <input type="text" class="form-input" id="rename-title" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Physical Storage Filename (Optional)</label>
+                    <input type="text" class="form-input" id="rename-filename" placeholder="e.g. Unit_1_DE_Notes">
+                    <span style="font-size:11px; color:var(--text-muted);">Extension will be preserved automatically. Path traversal is rejected.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-rename')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitRenameFile()">Save New Name</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT METADATA MODAL -->
+    <div class="modal-backdrop" id="modal-edit-meta">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📝 Edit Material Details</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-edit-meta')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-mat-id">
+                <div class="form-group">
+                    <label class="form-label">Title *</label>
+                    <input type="text" class="form-input" id="edit-title" required>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="form-group">
+                        <label class="form-label">Subject *</label>
+                        <input type="text" class="form-input" id="edit-subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Topic / Unit</label>
+                        <input type="text" class="form-input" id="edit-topic">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <select class="form-select" id="edit-sem">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                            <option value="3">Semester 3</option>
+                            <option value="4">Semester 4</option>
+                            <option value="5">Semester 5</option>
+                            <option value="6">Semester 6</option>
+                            <option value="7">Semester 7</option>
+                            <option value="8">Semester 8</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Material Type</label>
+                        <select class="form-select" id="edit-type">
+                            <option value="Notes">Notes</option>
+                            <option value="Previous Year Paper">Previous Year Paper</option>
+                            <option value="Assignment">Assignment</option>
+                            <option value="PPT">PPT</option>
+                            <option value="Book">Book</option>
+                            <option value="Lab Manual">Lab Manual</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="edit-status">
+                        <option value="active">Active (Visible to Students)</option>
+                        <option value="quarantined">Quarantined (Hidden from Students)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description / Tags</label>
+                    <textarea class="form-textarea" id="edit-desc" rows="2" placeholder="Add extra context or notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-edit-meta')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitEditMetadata()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRM DELETE FILE MODAL -->
+    <div class="modal-backdrop" id="modal-delete-file">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🗑️ Confirm File Deletion</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-delete-file')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="delete-mat-id">
+                <p style="margin-bottom:12px; font-size:14px;">Are you sure you want to permanently delete this study material?</p>
+                <div style="background:#fee2e2; border:1px solid #fecaca; border-radius:8px; padding:12px; font-size:12px; color:#991b1b;">
+                    <strong id="delete-file-title">File Name</strong><br>
+                    <span>Uploaded by: <span id="delete-file-uploader">Student</span></span><br>
+                    <span style="margin-top:6px; display:inline-block;">⚠️ This action removes the database record and deletes the physical file from server storage. It cannot be undone.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-delete-file')">Cancel</button>
+                <button class="btn btn-danger" onclick="submitDeleteFile()">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESOLVE REPORT MODAL -->
+    <div class="modal-backdrop" id="modal-resolve-report">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>⚖️ Moderate Study Material Report</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-resolve-report')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="resolve-report-id">
+                <input type="hidden" id="resolve-report-mat-id">
+                <p id="resolve-report-info" style="font-size:13px; margin-bottom:14px; font-weight:600;"></p>
+                <div class="form-group">
+                    <label class="form-label">Decision Action</label>
+                    <select class="form-select" id="resolve-report-decision">
+                        <option value="resolved">Mark Resolved (Issue addressed)</option>
+                        <option value="dismissed">Dismiss (Invalid report)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Moderator Notes</label>
+                    <textarea class="form-textarea" id="resolve-report-notes" rows="2" placeholder="Explain the moderation decision..."></textarea>
+                </div>
+                <div class="form-group" style="background:#fef2f2; border:1px solid #fee2e2; border-radius:6px; padding:10px;">
+                    <label style="font-size:12px; color:#b91c1c; font-weight:700; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="resolve-delete-file-check">
+                        Also quarantine/delete this reported material permanently
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-resolve-report')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitResolveReport()">Submit Decision</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD CATEGORY MODAL -->
+    <div class="modal-backdrop" id="modal-add-category">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>➕ Add Subject Category</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-add-category')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Subject / Category Name *</label>
+                    <input type="text" class="form-input" id="new-cat-name" placeholder="e.g. Computer Networks, DBMS" required>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="form-group">
+                        <label class="form-label">Subject Code</label>
+                        <input type="text" class="form-input" id="new-cat-code" placeholder="e.g. CS302">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <select class="form-select" id="new-cat-sem">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                            <option value="3" selected>Semester 3</option>
+                            <option value="4">Semester 4</option>
+                            <option value="5">Semester 5</option>
+                            <option value="6">Semester 6</option>
+                            <option value="7">Semester 7</option>
+                            <option value="8">Semester 8</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="new-cat-desc" rows="2" placeholder="Course outline or syllabus summary..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-add-category')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitAddCategory()">Create Subject</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MERGE CATEGORIES MODAL -->
+    <div class="modal-backdrop" id="modal-merge-category">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🔀 Merge Duplicate Subjects</h3>
+                <button class="modal-close-btn" onclick="closeModal('modal-merge-category')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Reassigns all study materials from the source category into the destination category, then deletes the source.</p>
+                <div class="form-group">
+                    <label class="form-label">Source Subject (To be merged & removed)</label>
+                    <select class="form-select" id="merge-source-select"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Destination Subject (To receive all materials)</label>
+                    <select class="form-select" id="merge-target-select"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-merge-category')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitMergeCategory()">Merge Subjects</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================================
+         ADMIN PANEL JAVASCRIPT LOGIC
+         ============================================================= -->
+    <script>
+        let currentAdminUser = null;
+        let currentTab = 'overview';
+        let filesPage = 1;
+        let filesTotalPages = 1;
+        let usersPage = 1;
+        let usersTotalPages = 1;
+        let reportsPage = 1;
+        let reportsTotalPages = 1;
+        let logsPage = 1;
+        let logsTotalPages = 1;
+        let searchTimer = null;
+        let selectedFileIds = new Set();
+        let allCategoriesList = [];
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('admin-toasts');
+            const el = document.createElement('div');
+            el.className = `toast-msg ${type}`;
+            el.innerText = msg;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(100%)';
+                el.style.transition = 'all 0.25s';
+                setTimeout(() => el.remove(), 250);
+            }, 3500);
+        }
+
+        // -------------------------------------------------------------
+        // AUTHENTICATION & SESSION VERIFICATION
+        // -------------------------------------------------------------
+        function checkAdminAuth() {
+            const rawUser = localStorage.getItem('studymate_user');
+            if (!rawUser) {
+                window.location.href = '/login?msg=Please+login+as+administrator';
+                return false;
+            }
+            try {
+                currentAdminUser = JSON.parse(rawUser);
+                if (currentAdminUser.role.toLowerCase() !== 'admin') {
+                    alert('Access Denied: Administrator role required.');
+                    window.location.href = '/';
+                    return false;
+                }
+                document.getElementById('admin-display-name').innerText = currentAdminUser.full_name || currentAdminUser.username;
+                document.getElementById('admin-display-role').innerText = `@${currentAdminUser.username} • Administrator`;
+                document.getElementById('admin-avatar-initial').innerText = (currentAdminUser.full_name || currentAdminUser.username).charAt(0).toUpperCase();
+                return true;
+            } catch(e) {
+                localStorage.removeItem('studymate_user');
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem('studymate_token') || '';
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+        }
+
+        function adminLogout() {
+            const token = localStorage.getItem('studymate_token');
+            if (token) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ token: token })
+                }).catch(() => {});
+            }
+            localStorage.removeItem('studymate_user');
+            localStorage.removeItem('studymate_token');
+            window.location.href = '/login';
+        }
+
+        // -------------------------------------------------------------
+        // NAVIGATION & TAB SWITCHING
+        // -------------------------------------------------------------
+        function switchAdminTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => {
+                if (el.getAttribute('data-tab') === tabName) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            const target = document.getElementById('tab-' + tabName);
+            if (target) target.classList.add('active');
+
+            const headers = {
+                overview: 'Dashboard Overview',
+                files: 'Study Materials Management',
+                users: 'User Accounts & Roles',
+                categories: 'Categories & Subjects',
+                reports: 'Moderation Reports',
+                logs: 'Administrative Activity Audit Logs',
+                storage: 'Storage Consistency & Health Scanner',
+                settings: 'Application Settings'
+            };
+            document.getElementById('topbar-header-text').innerText = headers[tabName] || 'Admin Dashboard';
+
+            // Close mobile sidebar if open
+            const sidebar = document.getElementById('adminSidebar');
+            if (sidebar) sidebar.classList.remove('open');
+
+            // Load data for the tab
+            if (tabName === 'overview') loadOverview();
+            else if (tabName === 'files') loadFiles(1);
+            else if (tabName === 'users') loadUsers(1);
+            else if (tabName === 'categories') loadCategories();
+            else if (tabName === 'reports') loadReports(1);
+            else if (tabName === 'logs') loadLogs(1);
+            else if (tabName === 'storage') loadStorage();
+            else if (tabName === 'settings') loadSettings();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            if (sidebar) sidebar.classList.toggle('open');
+        }
+
+        function refreshCurrentTab() {
+            switchAdminTab(currentTab);
+            showToast('Refreshed data.', 'info');
+        }
+
+        // -------------------------------------------------------------
+        // TAB 1: OVERVIEW DATA
+        // -------------------------------------------------------------
+        async function loadOverview() {
+            try {
+                const res = await fetch('/api/admin/overview', { headers: getAuthHeaders() });
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await res.json();
+                if (!data.success) {
+                    showToast(data.error || 'Failed loading overview.', 'error');
+                    return;
+                }
+                const stats = data.stats;
+                document.getElementById('stat-total-files').innerText = stats.total_materials;
+                document.getElementById('stat-total-users').innerText = stats.total_users;
+                document.getElementById('stat-uploads-today').innerText = `${stats.uploads_today} added today (${stats.uploads_this_week} this week)`;
+                const mb = (stats.total_storage_bytes / (1024 * 1024)).toFixed(2);
+                document.getElementById('stat-total-storage').innerText = `${mb} MB`;
+                document.getElementById('stat-pending-reports').innerText = stats.pending_reports;
+                document.getElementById('stat-missing-files').innerText = stats.missing_files_count;
+
+                const repBadge = document.getElementById('badge-pending-reports');
+                if (stats.pending_reports > 0) {
+                    repBadge.innerText = stats.pending_reports;
+                    repBadge.style.display = 'inline-block';
+                } else {
+                    repBadge.style.display = 'none';
+                }
+
+                // Render Popular Materials
+                const popBox = document.getElementById('overview-popular-list');
+                if (!stats.popular_materials || stats.popular_materials.length === 0) {
+                    popBox.innerHTML = '<div class="empty-box">No popular materials yet.</div>';
+                } else {
+                    popBox.innerHTML = stats.popular_materials.map(m => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;">
+                            <div>
+                                <strong style="font-size:13px;">${escapeHtml(m.title)}</strong>
+                                <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(m.subject)} • Sem ${m.semester} • ${m.material_type}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span class="badge badge-tag">⬇️ ${m.download_count} DL</span>
+                                ${m.favorite === 1 ? '<span class="badge" style="background:#fefce8; color:#854d0e;">⭐ Fav</span>' : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Render Active Users
+                const userBox = document.getElementById('overview-active-users');
+                if (!stats.active_users || stats.active_users.length === 0) {
+                    userBox.innerHTML = '<div class="empty-box">No active contributors yet.</div>';
+                } else {
+                    userBox.innerHTML = stats.active_users.map(u => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div style="width:28px; height:28px; border-radius:50%; background:#2563eb; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px;">
+                                    ${escapeHtml((u.full_name || u.username).charAt(0).toUpperCase())}
+                                </div>
+                                <div>
+                                    <strong style="font-size:13px;">${escapeHtml(u.full_name || u.username)}</strong>
+                                    <div style="font-size:11px; color:var(--text-muted);">@${escapeHtml(u.username)} • ${u.role}</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-active">${u.upload_count} uploads</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Render Recent Audit
+                const auditTbody = document.getElementById('overview-audit-table');
+                if (!stats.recent_audit || stats.recent_audit.length === 0) {
+                    auditTbody.innerHTML = '<tr><td colspan="5" class="empty-box">No activity logged yet.</td></tr>';
+                } else {
+                    auditTbody.innerHTML = stats.recent_audit.map(a => `
+                        <tr>
+                            <td><strong>${escapeHtml(a.admin_username)}</strong></td>
+                            <td><span class="badge badge-tag">${escapeHtml(a.action)}</span></td>
+                            <td>${escapeHtml(a.entity_type)}</td>
+                            <td style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(a.details)}</td>
+                            <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(a.created_at)}</td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                console.error(err);
+                showToast('Network error loading overview.', 'error');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // TAB 2: COMPLETE FILE MANAGEMENT (SEARCH, FILTER, RENAME, DELETE)
+        // -------------------------------------------------------------
+        function debounceFilesSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadFiles(1), 300);
+        }
+
+        async function loadFiles(page = 1) {
+            filesPage = page;
+            const q = document.getElementById('files-search').value.trim();
+            const subject = document.getElementById('files-filter-subject').value;
+            const type = document.getElementById('files-filter-type').value;
+            const status = document.getElementById('files-filter-status').value;
+            const sortVal = document.getElementById('files-sort').value;
+            const [sortBy, sortOrder] = sortVal.split('-');
+
+            const tbody = document.getElementById('files-table-body');
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Loading materials...</td></tr>';
+
+            try {
+                const url = `/api/admin/files?search=${encodeURIComponent(q)}&subject=${encodeURIComponent(subject)}&type=${encodeURIComponent(type)}&status=${encodeURIComponent(status)}&sort_by=${sortBy}&sort_order=${sortOrder}&page=${page}&per_page=10`;
+                const res = await fetch(url, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="10" class="empty-box">${escapeHtml(data.error)}</td></tr>`;
+                    return;
+                }
+
+                filesTotalPages = data.total_pages;
+                document.getElementById('files-curr-page').innerText = `${data.page} / ${data.total_pages}`;
+                document.getElementById('files-prev-btn').disabled = data.page <= 1;
+                document.getElementById('files-next-btn').disabled = data.page >= data.total_pages;
+                document.getElementById('files-page-info').innerText = `Showing ${data.materials.length} of ${data.total} materials`;
+
+                // Update subject dropdown if empty
+                populateSubjectDropdown(data.materials);
+
+                if (data.materials.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-box"><div class="empty-box-icon">📂</div><div class="empty-box-title">No study materials found</div><div>Try adjusting your search or filters.</div></div></td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.materials.map(m => {
+                    const sizeKB = (m.file_size / 1024).toFixed(1);
+                    const sizeMB = (m.file_size / (1024 * 1024)).toFixed(2);
+                    const sizeStr = m.file_size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+                    const isChecked = selectedFileIds.has(m.id) ? 'checked' : '';
+                    const statusBadge = m.status === 'quarantined' 
+                        ? `<span class="badge badge-quarantined">⚠️ Quarantined</span>` 
+                        : `<span class="badge badge-active">Active</span>`;
+
+                    return `
+                        <tr>
+                            <td><input type="checkbox" class="file-chk" data-id="${m.id}" ${isChecked} onchange="toggleSelectFile(${m.id}, this)"></td>
+                            <td>
+                                <strong>${escapeHtml(m.title)}</strong>
+                                <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(m.file_path)}</div>
+                            </td>
+                            <td>
+                                <span class="badge badge-tag">${escapeHtml(m.subject)}</span>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${escapeHtml(m.topic || '—')}</div>
+                            </td>
+                            <td><span class="badge badge-tag">${escapeHtml(m.material_type)}</span></td>
+                            <td style="font-size:12px; font-weight:600;">${sizeStr}</td>
+                            <td>${escapeHtml(m.uploader_name || 'Student')}</td>
+                            <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(m.date_added)}</td>
+                            <td><span class="badge badge-tag">⬇️ ${m.download_count}</span></td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="/api/view?id=${m.id}" target="_blank" class="btn-table" title="Preview file">👁️</a>
+                                    <a href="/api/view?id=${m.id}&download=1" class="btn-table" title="Download file">⬇️</a>
+                                    <button class="btn-table btn-table-edit" title="Rename" onclick="openRenameModal(${m.id}, '${escapeAttr(m.title)}', '${escapeAttr(m.file_path)}')">✏️</button>
+                                    <button class="btn-table btn-table-edit" title="Edit Metadata" onclick="openEditMetadataModal(${JSON.stringify(m).replace(/"/g, '&quot;')})">📝</button>
+                                    ${m.status === 'quarantined' 
+                                        ? `<button class="btn-table btn-table-warning" title="Restore" onclick="handleQuarantine(${m.id}, 'restore')">🔄</button>` 
+                                        : `<button class="btn-table btn-table-warning" title="Quarantine (Hide)" onclick="handleQuarantine(${m.id}, 'quarantine')">⏸️</button>`}
+                                    <button class="btn-table btn-table-danger" title="Delete" onclick="openDeleteFileModal(${m.id}, '${escapeAttr(m.title)}', '${escapeAttr(m.uploader_name)}')">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="10" class="empty-box">Error loading files: ${err}</td></tr>`;
+            }
+        }
+
+        function prevFilesPage() { if (filesPage > 1) loadFiles(filesPage - 1); }
+        function nextFilesPage() { if (filesPage < filesTotalPages) loadFiles(filesPage + 1); }
+
+        function resetFileFilters() {
+            document.getElementById('files-search').value = '';
+            document.getElementById('files-filter-subject').value = 'All';
+            document.getElementById('files-filter-type').value = 'All';
+            document.getElementById('files-filter-status').value = 'All';
+            document.getElementById('files-sort').value = 'id-desc';
+            loadFiles(1);
+        }
+
+        function populateSubjectDropdown(materials) {
+            const select = document.getElementById('files-filter-subject');
+            const current = select.value;
+            const subjects = new Set();
+            materials.forEach(m => { if (m.subject) subjects.add(m.subject); });
+            allCategoriesList.forEach(c => { if (c.name) subjects.add(c.name); });
+
+            let html = '<option value="All">All Subjects</option>';
+            Array.from(subjects).sort().forEach(s => {
+                html += `<option value="${escapeAttr(s)}" ${s === current ? 'selected' : ''}>${escapeHtml(s)}</option>`;
+            });
+            select.innerHTML = html;
+        }
+
+        // Checkbox selection for bulk actions
+        function toggleSelectFile(id, chk) {
+            if (chk.checked) selectedFileIds.add(id);
+            else selectedFileIds.delete(id);
+            updateBulkDeleteButton();
+        }
+
+        function toggleSelectAllFiles(allChk) {
+            document.querySelectorAll('.file-chk').forEach(chk => {
+                chk.checked = allChk.checked;
+                const id = parseInt(chk.getAttribute('data-id'));
+                if (allChk.checked) selectedFileIds.add(id);
+                else selectedFileIds.delete(id);
+            });
+            updateBulkDeleteButton();
+        }
+
+        function updateBulkDeleteButton() {
+            const btn = document.getElementById('btn-bulk-delete');
+            if (selectedFileIds.size > 0) {
+                btn.style.display = 'inline-flex';
+                btn.innerText = `🗑️ Delete Selected (${selectedFileIds.size})`;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        // Rename File Modal
+        function openRenameModal(id, title, filePath) {
+            document.getElementById('rename-mat-id').value = id;
+            document.getElementById('rename-title').value = title;
+            const cleanPath = filePath.replace(/\\/g, '/');
+            const baseName = cleanPath.split('/').pop().split('.').slice(0, -1).join('.') || cleanPath.split('/').pop();
+            document.getElementById('rename-filename').value = baseName;
+            openModal('modal-rename');
+        }
+
+        async function submitRenameFile() {
+            const id = document.getElementById('rename-mat-id').value;
+            const newTitle = document.getElementById('rename-title').value.trim();
+            const newFilename = document.getElementById('rename-filename').value.trim();
+
+            if (!newTitle) {
+                showToast('Title cannot be empty.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/files/rename', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ id: id, new_title: newTitle, new_filename: newFilename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Material renamed successfully!', 'success');
+                    closeModal('modal-rename');
+                    loadFiles(filesPage);
+                } else {
+                    showToast(data.error || 'Failed renaming material.', 'error');
+                }
+            } catch (err) {
+                showToast('Error during rename: ' + err, 'error');
+            }
+        }
+
+        // Edit Metadata Modal
+        function openEditMetadataModal(m) {
+            document.getElementById('edit-mat-id').value = m.id;
+            document.getElementById('edit-title').value = m.title;
+            document.getElementById('edit-subject').value = m.subject;
+            document.getElementById('edit-topic').value = m.topic || '';
+            document.getElementById('edit-sem').value = m.semester || '3';
+            document.getElementById('edit-type').value = m.material_type || 'Notes';
+            document.getElementById('edit-status').value = m.status || 'active';
+            document.getElementById('edit-desc').value = m.description || '';
+            openModal('modal-edit-meta');
+        }
+
+        async function submitEditMetadata() {
+            const id = document.getElementById('edit-mat-id').value;
+            const payload = {
+                id: id,
+                title: document.getElementById('edit-title').value.trim(),
+                subject: document.getElementById('edit-subject').value.trim(),
+                topic: document.getElementById('edit-topic').value.trim(),
+                semester: document.getElementById('edit-sem').value,
+                material_type: document.getElementById('edit-type').value,
+                status: document.getElementById('edit-status').value,
+                description: document.getElementById('edit-desc').value.trim()
+            };
+
+            if (!payload.title || !payload.subject) {
+                showToast('Title and Subject are required.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/files/edit', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Material metadata updated!', 'success');
+                    closeModal('modal-edit-meta');
+                    loadFiles(filesPage);
+                } else {
+                    showToast(data.error || 'Failed updating metadata.', 'error');
+                }
+            } catch (err) {
+                showToast('Error saving metadata: ' + err, 'error');
+            }
+        }
+
+        // Quarantine File
+        async function handleQuarantine(id, action) {
+            try {
+                const res = await fetch('/api/admin/files/quarantine', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ id: id, action: action })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Material ${action === 'quarantine' ? 'quarantined' : 'restored'} successfully!`, 'info');
+                    loadFiles(filesPage);
+                } else {
+                    showToast(data.error || 'Action failed.', 'error');
+                }
+            } catch(e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        // Delete File Modal
+        function openDeleteFileModal(id, title, uploader) {
+            document.getElementById('delete-mat-id').value = id;
+            document.getElementById('delete-file-title').innerText = title;
+            document.getElementById('delete-file-uploader').innerText = uploader || 'Student';
+            openModal('modal-delete-file');
+        }
+
+        async function submitDeleteFile() {
+            const id = document.getElementById('delete-mat-id').value;
+            try {
+                const res = await fetch('/api/admin/files/delete', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Material permanently deleted!', 'success');
+                    closeModal('modal-delete-file');
+                    selectedFileIds.delete(parseInt(id));
+                    updateBulkDeleteButton();
+                    loadFiles(filesPage);
+                } else {
+                    showToast(data.error || 'Delete failed.', 'error');
+                }
+            } catch (e) {
+                showToast('Error deleting file: ' + e, 'error');
+            }
+        }
+
+        async function handleBulkDelete() {
+            if (selectedFileIds.size === 0) return;
+            if (!confirm(`Are you sure you want to permanently delete ${selectedFileIds.size} selected materials from the database and storage?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/files/delete', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ ids: Array.from(selectedFileIds) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Successfully deleted ${data.deleted_count} materials.`, 'success');
+                    selectedFileIds.clear();
+                    updateBulkDeleteButton();
+                    loadFiles(filesPage);
+                } else {
+                    showToast(data.error || 'Bulk delete failed.', 'error');
+                }
+            } catch (e) {
+                showToast('Error during bulk delete: ' + e, 'error');
+            }
+        }
+
+        function exportFilesCSV() {
+            const q = document.getElementById('files-search').value.trim();
+            const subject = document.getElementById('files-filter-subject').value;
+            const token = localStorage.getItem('studymate_token') || '';
+            const url = `/api/admin/files/export?search=${encodeURIComponent(q)}&subject=${encodeURIComponent(subject)}&token=${encodeURIComponent(token)}`;
+            window.location.href = url;
+        }
+
+        // -------------------------------------------------------------
+        // TAB 3: USER MANAGEMENT
+        // -------------------------------------------------------------
+        function debounceUsersSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadUsers(1), 300);
+        }
+
+        async function loadUsers(page = 1) {
+            usersPage = page;
+            const q = document.getElementById('users-search').value.trim();
+            const role = document.getElementById('users-filter-role').value;
+            const status = document.getElementById('users-filter-status').value;
+
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Loading users...</td></tr>';
+
+            try {
+                const url = `/api/admin/users?search=${encodeURIComponent(q)}&role=${encodeURIComponent(role)}&status=${encodeURIComponent(status)}&page=${page}&per_page=10`;
+                const res = await fetch(url, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="empty-box">${escapeHtml(data.error)}</td></tr>`;
+                    return;
+                }
+
+                usersTotalPages = data.total_pages;
+                document.getElementById('users-curr-page').innerText = `${data.page} / ${data.total_pages}`;
+                document.getElementById('users-prev-btn').disabled = data.page <= 1;
+                document.getElementById('users-next-btn').disabled = data.page >= data.total_pages;
+                document.getElementById('users-page-info').innerText = `Showing ${data.users.length} of ${data.total} users`;
+
+                if (data.users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-box"><div class="empty-box-icon">👥</div><div class="empty-box-title">No user accounts found</div></div></td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.users.map(u => {
+                    const isSelf = currentAdminUser && (u.id === currentAdminUser.id || u.username.toLowerCase() === currentAdminUser.username.toLowerCase());
+                    const roleBadge = u.role.toLowerCase() === 'admin' 
+                        ? `<span class="badge badge-admin">👑 Admin</span>` 
+                        : `<span class="badge badge-student">Student</span>`;
+                    const statusBadge = u.status === 'suspended' 
+                        ? `<span class="badge badge-suspended">Suspended</span>` 
+                        : `<span class="badge badge-active">Active</span>`;
+
+                    return `
+                        <tr>
+                            <td>#${u.id}</td>
+                            <td><strong>${escapeHtml(u.username)}</strong> ${isSelf ? '<span style="font-size:10px; color:#3b82f6;">(You)</span>' : ''}</td>
+                            <td>${escapeHtml(u.full_name)}</td>
+                            <td>${escapeHtml(u.email || '—')}</td>
+                            <td>${roleBadge}</td>
+                            <td>${statusBadge}</td>
+                            <td><span class="badge badge-tag">${u.upload_count} files</span></td>
+                            <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(u.created_at)}</td>
+                            <td>
+                                <div class="table-actions">
+                                    ${!isSelf ? `
+                                        ${u.status === 'suspended' 
+                                            ? `<button class="btn-table btn-table-edit" onclick="handleUserStatus(${u.id}, 'active')">Reactivate</button>` 
+                                            : `<button class="btn-table btn-table-warning" onclick="handleUserStatus(${u.id}, 'suspended')">Suspend</button>`}
+                                        ${u.role.toLowerCase() === 'admin' 
+                                            ? `<button class="btn-table btn-table-warning" onclick="handleUserRole(${u.id}, 'Student')">Demote to Student</button>` 
+                                            : `<button class="btn-table btn-table-edit" onclick="handleUserRole(${u.id}, 'Admin')">Promote to Admin</button>`}
+                                        <button class="btn-table btn-table-danger" onclick="handleDeleteUser(${u.id}, '${escapeAttr(u.username)}')">Delete</button>
+                                    ` : `<span style="font-size:11px; color:var(--text-muted);">Current Admin</span>`}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="9" class="empty-box">Error loading users: ${err}</td></tr>`;
+            }
+        }
+
+        function prevUsersPage() { if (usersPage > 1) loadUsers(usersPage - 1); }
+        function nextUsersPage() { if (usersPage < usersTotalPages) loadUsers(usersPage + 1); }
+
+        function resetUserFilters() {
+            document.getElementById('users-search').value = '';
+            document.getElementById('users-filter-role').value = 'All';
+            document.getElementById('users-filter-status').value = 'All';
+            loadUsers(1);
+        }
+
+        async function handleUserStatus(userId, newStatus) {
+            try {
+                const res = await fetch('/api/admin/users/status', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ user_id: userId, status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    loadUsers(usersPage);
+                } else {
+                    showToast(data.error || 'Failed updating user status.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        async function handleUserRole(userId, newRole) {
+            if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+            try {
+                const res = await fetch('/api/admin/users/role', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ user_id: userId, role: newRole })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    loadUsers(usersPage);
+                } else {
+                    showToast(data.error || 'Failed updating role.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        async function handleDeleteUser(userId, username) {
+            if (!confirm(`⚠️ Are you sure you want to delete user account '${username}'? This will permanently remove their access.`)) return;
+            try {
+                const res = await fetch('/api/admin/users/delete', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('User account deleted.', 'success');
+                    loadUsers(usersPage);
+                } else {
+                    showToast(data.error || 'Failed deleting user.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // TAB 4: CATEGORIES & SUBJECTS MANAGEMENT
+        // -------------------------------------------------------------
+        async function loadCategories() {
+            const tbody = document.getElementById('categories-table-body');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading categories...</td></tr>';
+
+            try {
+                const res = await fetch('/api/admin/categories', { headers: getAuthHeaders() });
+                const data = await res.json();
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="empty-box">${escapeHtml(data.error)}</td></tr>`;
+                    return;
+                }
+
+                allCategoriesList = data.categories;
+                if (data.categories.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-box"><div class="empty-box-icon">🏷️</div><div class="empty-box-title">No subjects found</div></div></td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.categories.map(c => `
+                    <tr>
+                        <td><strong>${escapeHtml(c.name)}</strong></td>
+                        <td><span class="badge badge-tag">${escapeHtml(c.code || '—')}</span></td>
+                        <td>Sem ${c.semester || 3}</td>
+                        <td><span class="badge badge-active">${c.material_count} materials</span></td>
+                        <td>${escapeHtml(c.description || '—')}</td>
+                        <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(c.created_at)}</td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="btn-table btn-table-danger" onclick="handleDeleteCategory(${c.id}, '${escapeAttr(c.name)}', ${c.material_count})">🗑️ Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-box">Error loading categories: ${err}</td></tr>`;
+            }
+        }
+
+        function openAddCategoryModal() {
+            document.getElementById('new-cat-name').value = '';
+            document.getElementById('new-cat-code').value = '';
+            document.getElementById('new-cat-desc').value = '';
+            openModal('modal-add-category');
+        }
+
+        async function submitAddCategory() {
+            const name = document.getElementById('new-cat-name').value.trim();
+            const code = document.getElementById('new-cat-code').value.trim();
+            const semester = document.getElementById('new-cat-sem').value;
+            const desc = document.getElementById('new-cat-desc').value.trim();
+
+            if (!name) {
+                showToast('Category name is required.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/categories/create', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ name: name, code: code, semester: semester, description: desc })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Subject '${name}' created!`, 'success');
+                    closeModal('modal-add-category');
+                    loadCategories();
+                } else {
+                    showToast(data.error || 'Failed creating category.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        async function handleDeleteCategory(id, name, matCount) {
+            let reassignTo = null;
+            if (matCount > 0) {
+                const options = allCategoriesList.filter(c => c.name !== name).map(c => c.name);
+                if (options.length === 0) {
+                    alert(`Cannot delete '${name}' because it contains ${matCount} materials and no other categories exist to reassign them to.`);
+                    return;
+                }
+                const promptMsg = `This subject has ${matCount} materials assigned to it.\nEnter replacement subject name to reassign them:\n(Available: ${options.join(', ')})`;
+                reassignTo = prompt(promptMsg, options[0]);
+                if (!reassignTo) return;
+            } else {
+                if (!confirm(`Are you sure you want to delete unused subject '${name}'?`)) return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/categories/delete', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ id: id, reassign_to: reassignTo })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Subject '${name}' removed successfully!`, 'success');
+                    loadCategories();
+                } else {
+                    showToast(data.error || 'Failed deleting category.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        function openMergeCategoryModal() {
+            const srcSelect = document.getElementById('merge-source-select');
+            const dstSelect = document.getElementById('merge-target-select');
+            let opts = '';
+            allCategoriesList.forEach(c => {
+                opts += `<option value="${escapeAttr(c.name)}">${escapeHtml(c.name)} (${c.material_count} files)</option>`;
+            });
+            srcSelect.innerHTML = opts;
+            dstSelect.innerHTML = opts;
+            openModal('modal-merge-category');
+        }
+
+        async function submitMergeCategory() {
+            const src = document.getElementById('merge-source-select').value;
+            const dst = document.getElementById('merge-target-select').value;
+            if (src === dst) {
+                showToast('Source and destination subjects must be different.', 'error');
+                return;
+            }
+
+            if (!confirm(`Merge all materials from '${src}' into '${dst}' and remove '${src}'?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/categories/merge', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ source_name: src, target_name: dst })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('modal-merge-category');
+                    loadCategories();
+                } else {
+                    showToast(data.error || 'Merge failed.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // TAB 5: REPORTS & MODERATION
+        // -------------------------------------------------------------
+        async function loadReports(page = 1) {
+            reportsPage = page;
+            const status = document.getElementById('reports-filter-status').value;
+            const tbody = document.getElementById('reports-table-body');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Loading reports...</td></tr>';
+
+            try {
+                const url = `/api/admin/reports?status=${encodeURIComponent(status)}&page=${page}&per_page=10`;
+                const res = await fetch(url, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="empty-box">${escapeHtml(data.error)}</td></tr>`;
+                    return;
+                }
+
+                reportsTotalPages = data.total_pages;
+                document.getElementById('reports-curr-page').innerText = `${data.page} / ${data.total_pages}`;
+                document.getElementById('reports-prev-btn').disabled = data.page <= 1;
+                document.getElementById('reports-next-btn').disabled = data.page >= data.total_pages;
+                document.getElementById('reports-page-info').innerText = `Showing ${data.reports.length} of ${data.total} reports`;
+
+                if (data.reports.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-box"><div class="empty-box-icon">✅</div><div class="empty-box-title">No reports pending</div><div>All student issues have been reviewed.</div></div></td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.reports.map(r => {
+                    const statusBadge = r.status === 'pending' 
+                        ? `<span class="badge badge-quarantined">Pending Review</span>` 
+                        : (r.status === 'resolved' ? `<span class="badge badge-active">Resolved</span>` : `<span class="badge badge-tag">Dismissed</span>`);
+
+                    return `
+                        <tr>
+                            <td>#${r.id}</td>
+                            <td>
+                                <strong>${escapeHtml(r.material_title || 'Material #' + r.material_id)}</strong>
+                                ${r.file_path ? `<div style="font-size:11px;"><a href="/api/view?id=${r.material_id}" target="_blank" style="color:#2563eb;">👁️ Inspect File</a></div>` : ''}
+                            </td>
+                            <td><span class="badge badge-tag" style="color:#b91c1c;">${escapeHtml(r.reason)}</span></td>
+                            <td>${escapeHtml(r.reporter_name || 'Student')}</td>
+                            <td style="max-width:200px;">${escapeHtml(r.details || 'No extra comment')}</td>
+                            <td>${statusBadge}</td>
+                            <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(r.created_at)}</td>
+                            <td>
+                                <div class="table-actions">
+                                    ${r.status === 'pending' ? `
+                                        <button class="btn-table btn-table-edit" onclick="openResolveReportModal(${r.id}, ${r.material_id}, '${escapeAttr(r.material_title)}', '${escapeAttr(r.reason)}')">⚖️ Review</button>
+                                    ` : `<span style="font-size:11px; color:var(--text-muted);">${escapeHtml(r.admin_notes || 'Done')}</span>`}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-box">Error loading reports: ${err}</td></tr>`;
+            }
+        }
+
+        function prevReportsPage() { if (reportsPage > 1) loadReports(reportsPage - 1); }
+        function nextReportsPage() { if (reportsPage < reportsTotalPages) loadReports(reportsPage + 1); }
+
+        function openResolveReportModal(reportId, matId, matTitle, reason) {
+            document.getElementById('resolve-report-id').value = reportId;
+            document.getElementById('resolve-report-mat-id').value = matId;
+            document.getElementById('resolve-report-info').innerText = `Report #${reportId} on '${matTitle}' for reason: ${reason}`;
+            document.getElementById('resolve-report-notes').value = '';
+            document.getElementById('resolve-delete-file-check').checked = false;
+            openModal('modal-resolve-report');
+        }
+
+        async function submitResolveReport() {
+            const reportId = document.getElementById('resolve-report-id').value;
+            const matId = document.getElementById('resolve-report-mat-id').value;
+            const decision = document.getElementById('resolve-report-decision').value;
+            const notes = document.getElementById('resolve-report-notes').value.trim();
+            const shouldDelete = document.getElementById('resolve-delete-file-check').checked;
+
+            try {
+                if (shouldDelete) {
+                    await fetch('/api/admin/files/delete', {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ id: matId })
+                    });
+                }
+
+                const res = await fetch('/api/admin/reports/resolve', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ report_id: reportId, status: decision, admin_notes: notes })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Report moderation decision recorded!', 'success');
+                    closeModal('modal-resolve-report');
+                    loadReports(reportsPage);
+                } else {
+                    showToast(data.error || 'Failed updating report.', 'error');
+                }
+            } catch (e) {
+                showToast('Error: ' + e, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // TAB 6: ACTIVITY LOGS & AUDIT TRAIL
+        // -------------------------------------------------------------
+        function debounceLogsSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadLogs(1), 300);
+        }
+
+        async function loadLogs(page = 1) {
+            logsPage = page;
+            const q = document.getElementById('logs-search').value.trim();
+            const action = document.getElementById('logs-filter-action').value;
+            const tbody = document.getElementById('logs-table-body');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading audit trail...</td></tr>';
+
+            try {
+                const url = `/api/admin/audit_logs?search=${encodeURIComponent(q)}&action=${encodeURIComponent(action)}&page=${page}&per_page=15`;
+                const res = await fetch(url, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="empty-box">${escapeHtml(data.error)}</td></tr>`;
+                    return;
+                }
+
+                logsTotalPages = data.total_pages;
+                document.getElementById('logs-curr-page').innerText = `${data.page} / ${data.total_pages}`;
+                document.getElementById('logs-prev-btn').disabled = data.page <= 1;
+                document.getElementById('logs-next-btn').disabled = data.page >= data.total_pages;
+                document.getElementById('logs-page-info').innerText = `Showing ${data.logs.length} of ${data.total} audit entries`;
+
+                if (data.logs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-box"><div class="empty-box-icon">📜</div><div class="empty-box-title">No audit records found</div></div></td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.logs.map(l => `
+                    <tr>
+                        <td style="font-size:11px; color:var(--text-muted); font-family:monospace;">${escapeHtml(l.created_at)}</td>
+                        <td><strong>${escapeHtml(l.admin_username)}</strong></td>
+                        <td><span class="badge badge-tag">${escapeHtml(l.action)}</span></td>
+                        <td>${escapeHtml(l.entity_type)} #${l.entity_id || '—'}</td>
+                        <td style="font-size:12px;">${escapeHtml(l.details)}</td>
+                        <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(l.ip_address || '—')}</td>
+                        <td><span class="badge badge-active">${escapeHtml(l.status)}</span></td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-box">Error loading logs: ${err}</td></tr>`;
+            }
+        }
+
+        function prevLogsPage() { if (logsPage > 1) loadLogs(logsPage - 1); }
+        function nextLogsPage() { if (logsPage < logsTotalPages) loadLogs(logsPage + 1); }
+
+        function resetLogFilters() {
+            document.getElementById('logs-search').value = '';
+            document.getElementById('logs-filter-action').value = 'All';
+            loadLogs(1);
+        }
+
+        // -------------------------------------------------------------
+        // TAB 7: STORAGE HEALTH & CONSISTENCY SCANNER
+        // -------------------------------------------------------------
+        async function loadStorage() {
+            try {
+                const res = await fetch('/api/admin/storage', { headers: getAuthHeaders() });
+                const data = await res.json();
+                if (!data.success) return;
+
+                const st = data.storage;
+                const dbMB = (st.db_total_size_bytes / (1024 * 1024)).toFixed(2);
+                const diskMB = (st.disk_total_size_bytes / (1024 * 1024)).toFixed(2);
+                document.getElementById('storage-db-size').innerText = `${dbMB} MB`;
+                document.getElementById('storage-db-count').innerText = `${st.total_materials_db} DB records`;
+                document.getElementById('storage-disk-size').innerText = `${diskMB} MB`;
+                document.getElementById('storage-disk-count').innerText = `${st.file_count_disk} files on disk`;
+
+                // Render Largest Files
+                const tbody = document.getElementById('storage-largest-table');
+                if (!st.largest_files || st.largest_files.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-box">No files found.</td></tr>';
+                } else {
+                    tbody.innerHTML = st.largest_files.map(f => {
+                        const mb = (f.file_size / (1024 * 1024)).toFixed(2);
+                        return `
+                            <tr>
+                                <td><strong>${escapeHtml(f.title)}</strong></td>
+                                <td><span class="badge badge-tag">${escapeHtml(f.subject)}</span></td>
+                                <td style="font-weight:700;">${mb} MB</td>
+                                <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(f.file_path)}</td>
+                                <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(f.date_added)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function runStorageScan() {
+            showToast('Scanning storage consistency against database...', 'info');
+            try {
+                const res = await fetch('/api/admin/storage/scan', {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    showToast('Scan failed: ' + data.error, 'error');
+                    return;
+                }
+
+                const scan = data.scan;
+                document.getElementById('storage-missing-count').innerText = scan.missing_count;
+                document.getElementById('storage-orphaned-count').innerText = scan.orphaned_count;
+
+                const box = document.getElementById('scan-results-box');
+                const content = document.getElementById('scan-details-content');
+                box.style.display = 'block';
+
+                let html = `
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:14px;">
+                        <strong>Scan Completed at:</strong> ${escapeHtml(scan.scanned_at)}<br>
+                        <span>✅ <strong>${scan.valid_count}</strong> files perfectly synchronized between database and physical storage.</span><br>
+                        <span>⚠️ <strong>${scan.missing_count}</strong> files missing from disk.</span><br>
+                        <span>📦 <strong>${scan.orphaned_count}</strong> unindexed orphaned files found in uploads directory.</span>
+                    </div>
+                `;
+
+                if (scan.missing_count > 0) {
+                    html += `
+                        <h5 style="color:#b91c1c; margin-bottom:6px;">Missing Files List:</h5>
+                        <ul style="margin-left:20px; font-size:12px; margin-bottom:14px;">
+                            ${scan.missing_files.map(m => `<li><strong>ID ${m.id}</strong>: '${escapeHtml(m.title)}' (Expected: ${escapeHtml(m.filename)})</li>`).join('')}
+                        </ul>
+                    `;
+                }
+
+                if (scan.orphaned_count > 0) {
+                    html += `
+                        <h5 style="color:#b45309; margin-bottom:6px;">Orphaned Files in uploads/:</h5>
+                        <ul style="margin-left:20px; font-size:12px;">
+                            ${scan.orphaned_files.map(o => `<li>${escapeHtml(o.filename)} (${(o.size/1024).toFixed(1)} KB)</li>`).join('')}
+                        </ul>
+                    `;
+                }
+
+                content.innerHTML = html;
+                showToast('Storage consistency scan complete!', 'success');
+
+            } catch (err) {
+                showToast('Error during storage scan: ' + err, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // TAB 8: SETTINGS MANAGEMENT
+        // -------------------------------------------------------------
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/admin/settings', { headers: getAuthHeaders() });
+                const data = await res.json();
+                if (!data.success) return;
+                const s = data.settings;
+
+                if (s.max_upload_size_mb) document.getElementById('setting-max-size').value = s.max_upload_size_mb.value;
+                if (s.allowed_extensions) document.getElementById('setting-allowed-ext').value = s.allowed_extensions.value;
+                if (s.default_pagination) document.getElementById('setting-pagination').value = s.default_pagination.value;
+                if (s.allow_student_registration) document.getElementById('setting-allow-reg').value = s.allow_student_registration.value;
+                if (s.maintenance_mode) document.getElementById('setting-maintenance').value = s.maintenance_mode.value;
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function handleSaveSettings(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-save-settings');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+
+            const settings = {
+                max_upload_size_mb: document.getElementById('setting-max-size').value,
+                allowed_extensions: document.getElementById('setting-allowed-ext').value,
+                default_pagination: document.getElementById('setting-pagination').value,
+                allow_student_registration: document.getElementById('setting-allow-reg').value,
+                maintenance_mode: document.getElementById('setting-maintenance').value
+            };
+
+            try {
+                for (const [k, v] of Object.entries(settings)) {
+                    await fetch('/api/admin/settings/update', {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ key: k, value: v })
+                    });
+                }
+                btn.disabled = false;
+                btn.innerText = '💾 Save Settings';
+                showToast('Application settings updated successfully!', 'success');
+            } catch (e) {
+                btn.disabled = false;
+                btn.innerText = '💾 Save Settings';
+                showToast('Error saving settings: ' + e, 'error');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // MODAL HELPERS & UTILITIES
+        // -------------------------------------------------------------
+        function openModal(modalId) {
+            const m = document.getElementById(modalId);
+            if (m) m.classList.add('open');
+        }
+
+        function closeModal(modalId) {
+            const m = document.getElementById(modalId);
+            if (m) m.classList.remove('open');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Initialize on load
+        if (checkAdminAuth()) {
+            loadOverview();
+        }
+    </script>
+</body>
+</html>

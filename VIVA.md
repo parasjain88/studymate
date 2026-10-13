@@ -211,4 +211,71 @@ This ensures user input is strictly treated as literal data rather than executab
 
 ### Q26. How does the Web version maintain the user's login state?
 **Answer:**  
-When the `/api/login` endpoint responds with a successful authentication status, the frontend stores the user's basic profile in the browser's `localStorage`. When the user refreshes or revisits the page, StudyMate checks `localStorage` and automatically restores their session without asking them to log in again until they click **Sign Out**.
+When the `/api/login` endpoint responds with a successful authentication status, the frontend stores the user's basic profile and session token in the browser's `localStorage` and receives an `HttpOnly` session cookie. When the user refreshes or revisits the page, StudyMate validates the session token against the server-side `sessions` table and restores their session without asking them to log in again until they click **Sign Out**.
+
+---
+
+### Q27. What is Role-Based Access Control (RBAC) and how is it implemented in StudyMate?
+**Answer:**  
+1. **Definition**: Role-Based Access Control restricts system access to authorized users based on their assigned role (`Student` vs. `Admin`).
+2. **Implementation**:
+   - The `users` table stores a `role` column.
+   - On every request to an administrative endpoint (such as `/admin`, `/api/admin/files`, `/api/admin/users`), the server invokes a backend authorization check (`require_admin()`).
+   - If an unauthenticated user attempts access, the server returns `HTTP 401 Unauthorized`.
+   - If an authenticated student attempts access, the server returns `HTTP 403 Forbidden`.
+   - Crucially, access control is enforced on the server, not just by hiding UI buttons.
+
+---
+
+### Q28. How does StudyMate protect against Brute-Force Password Guessing Attacks?
+**Answer:**  
+1. We implemented an in-memory IP rate limiter (`check_rate_limit`) on the `/api/login` endpoint.
+2. If an IP address fails login 5 times within a 60-second window, the server blocks further attempts from that IP and responds with `HTTP 429 Too Many Requests`.
+3. This prevents automated dictionary attacks and password guessing scripts from compromising accounts.
+
+---
+
+### Q29. What is a Server-Side Session Token and why is it used?
+**Answer:**  
+1. After a user verifies their username and password, the server generates a cryptographically random 64-character hex token using Python's `secrets.token_hex(32)`.
+2. This token is saved in the `sessions` table with an expiration timestamp (`expires_at`, 7 days).
+3. The client sends this token in the `Authorization: Bearer <token>` header or session cookie for subsequent requests.
+4. **Benefit**: The user's actual password hash is never repeatedly transmitted across HTTP requests, and sessions can be instantly revoked from the database if an account is suspended or logged out.
+
+---
+
+### Q30. How does StudyMate prevent Directory Traversal / Path Traversal attacks?
+**Answer:**  
+1. **The Vulnerability**: An attacker might attempt to upload or rename a file with names like `../../windows/system32/cmd.exe` or `../../secret.txt` to overwrite or escape to unauthorized system folders.
+2. **Our Defense**:
+   - We strictly pass every uploaded or renamed filename through `os.path.basename()`, which strips any leading directory separators (`/` or `\`) or `../` patterns.
+   - We strip null bytes (`\0`) and sanitize the stem to alphanumeric and safe characters.
+   - We verify that all file operations resolve strictly inside the application's designated `uploads/` folder.
+
+---
+
+### Q31. What is the "Last Active Administrator" protection rule?
+**Answer:**  
+1. A common administrative flaw is an admin accidentally deleting, demoting, or suspending their own account, locking everyone out of the system.
+2. In `database.py`, before any user deletion, role demotion, or account suspension, the function `count_active_admins()` checks the total number of active administrators.
+3. If only 1 active administrator remains, the action is rejected with a security error:
+   > *"Security restriction: Cannot demote, suspend, or delete the last active administrator."*
+
+---
+
+### Q32. What is the Storage Consistency Scanner?
+**Answer:**  
+1. In production web applications, database records and filesystem storage can become out-of-sync if files are manually deleted from disk or if an upload crashes midway.
+2. The Admin Panel includes an automated storage scanner (`scan_storage_consistency`):
+   - **Missing files**: Study materials present in the SQLite database whose physical files have disappeared from disk.
+   - **Orphaned files**: Physical files sitting in the `uploads/` directory that have no matching record in the database.
+   - **Valid files**: Files perfectly synchronized in both disk and database.
+3. Administrators can run this scan on demand and clean up inconsistencies with one click.
+
+---
+
+### Q33. How does the File Moderation & Reporting system work?
+**Answer:**  
+1. When a student finds a corrupt, broken, or inappropriate study material, they can click **🚩 Report File** and provide a reason and details.
+2. This creates a record in the `reports` table with status `pending`.
+3. In the Admin Panel under **Reports & Moderation**, administrators can view all reported files, preview the content, quarantine the file (hiding it from students while preserving evidence), or resolve/dismiss the report with notes.

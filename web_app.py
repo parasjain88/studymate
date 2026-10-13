@@ -32,6 +32,10 @@ import sys
 import base64
 import mimetypes
 import webbrowser
+import time
+import secrets
+import csv
+import io
 import database
 
 # Deployment configuration
@@ -39,7 +43,13 @@ PORT = int(os.environ.get("PORT", 8000))
 HOST = os.environ.get("HOST", "0.0.0.0")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+ADMIN_HTML_PATH = os.path.join(BASE_DIR, "admin.html")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+# Brute-force rate limiting (in-memory)
+FAILED_LOGIN_ATTEMPTS = {}
+RATE_LIMIT_MAX_ATTEMPTS = 5
+RATE_LIMIT_WINDOW_SECONDS = 300  # 5 minutes lockout window
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -550,6 +560,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .btn-down:hover { background: #dcfce7; }
         .btn-star { background: #fefce8; color: #854d0e; border-color: #fef08a; }
         .btn-star:hover { background: #fef08a; }
+        .btn-report { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+        .btn-report:hover { background: #ffe4e6; }
         .btn-pc { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
         .btn-pc:hover { background: #e2e8f0; }
 
@@ -1015,6 +1027,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <span class="mobile-brand-icon">📚</span>
                 <span class="mobile-brand-text">StudyMate</span>
             </div>
+            <a href="/admin" id="mobile-topbar-admin-link" style="display:none; color:#38bdf8; font-size:12px; font-weight:700; text-decoration:none; background:rgba(56,189,248,0.15); padding:4px 8px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); margin-left:auto; margin-right:8px;">⚙️ Admin</a>
             <div class="mobile-user-pill" onclick="toggleMobileDrawer()" title="View Student Profile">
                 <div class="mobile-avatar" id="mobile-avatar-initial">P</div>
             </div>
@@ -1046,6 +1059,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <button class="nav-btn" data-view="add" onclick="switchView('add')">➕ Add Material</button>
             <button class="nav-btn" data-view="search" onclick="switchView('search')">🔍 Search & Filter</button>
             <button class="nav-btn" data-view="favorites" onclick="switchView('favorites')">⭐ Favorites</button>
+            <a href="/admin" id="sidebar-admin-link" class="nav-btn" style="display:none; color:#38bdf8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); text-decoration:none; margin-top:8px;">⚙️ Admin Dashboard</a>
 
             <div class="sidebar-footer">
                 <a href="/report" target="_blank" class="report-btn">📄 View Project Report</a>
@@ -1275,6 +1289,34 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </nav>
     </div>
 
+    <!-- Student Report Modal -->
+    <div id="modal-report-material" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div style="background:#fff; border-radius:12px; padding:24px; max-width:440px; width:90%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2);">
+            <h3 style="font-size:18px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">🚩 Report Study Material</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:14px;" id="report-modal-subtitle">Help moderators review broken or inappropriate files.</p>
+            <input type="hidden" id="report-modal-mat-id">
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px; color:#334155;">Reason</label>
+                <select id="report-modal-reason" class="form-control" style="width:100%; padding:8px 12px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:13px;">
+                    <option value="Broken / Corrupted File">Broken / Corrupted File</option>
+                    <option value="Incorrect Subject / Semester">Incorrect Subject / Semester</option>
+                    <option value="Copyright Violation">Copyright Violation</option>
+                    <option value="Inappropriate Content">Inappropriate Content</option>
+                    <option value="Duplicate Material">Duplicate Material</option>
+                    <option value="Other">Other Issue</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px; color:#334155;">Additional Details (Optional)</label>
+                <textarea id="report-modal-details" rows="3" class="form-control" placeholder="Describe the issue with this material..." style="width:100%; padding:8px 12px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:13px; resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" onclick="closeReportModal()" style="padding:8px 16px; border:1px solid #cbd5e1; background:#f8fafc; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+                <button type="button" onclick="submitStudentReport()" style="padding:8px 16px; border:none; background:#ef4444; color:#fff; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer;">Submit Report 🚩</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentFileObj = null;
         let currentUser = null;
@@ -1291,6 +1333,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 toast.style.transition = 'all 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
             }, 3500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
         /* -------------------------------------------------------------
@@ -1324,8 +1376,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 if (data.success) {
                     currentUser = data.user;
                     localStorage.setItem('studymate_user', JSON.stringify(currentUser));
+                    if (data.token) {
+                        localStorage.setItem('studymate_token', data.token);
+                    }
                     showToast(`Welcome back, ${currentUser.full_name}! 👋`, 'success');
                     renderApp();
+
+                    if (currentUser.role && currentUser.role.toLowerCase() === 'admin') {
+                        setTimeout(() => {
+                            if (confirm(`Welcome Administrator ${currentUser.full_name}!\nWould you like to open the Admin Panel now?`)) {
+                                window.location.href = '/admin';
+                            }
+                        }, 500);
+                    }
                 } else {
                     showToast(data.error || 'Invalid credentials.', 'error');
                 }
@@ -1338,7 +1401,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         function handleLogout() {
             closeMobileDrawer();
+            const token = localStorage.getItem('studymate_token');
+            if (token) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+                }).catch(() => {});
+            }
             localStorage.removeItem('studymate_user');
+            localStorage.removeItem('studymate_token');
             currentUser = null;
             document.getElementById('app-shell').style.display = 'none';
             document.getElementById('auth-screen').style.display = 'flex';
@@ -1373,10 +1444,63 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 document.getElementById('avatar-initial').innerText = initial;
                 const mobInitial = document.getElementById('mobile-avatar-initial');
                 if (mobInitial) mobInitial.innerText = initial;
+
+                const isAdmin = currentUser.role && currentUser.role.toLowerCase() === 'admin';
+                const sbLink = document.getElementById('sidebar-admin-link');
+                if (sbLink) sbLink.style.display = isAdmin ? 'flex' : 'none';
+                const mobLink = document.getElementById('mobile-topbar-admin-link');
+                if (mobLink) mobLink.style.display = isAdmin ? 'inline-block' : 'none';
             }
 
             fetchStats();
             fetchRecentMaterials();
+        }
+
+        /* -------------------------------------------------------------
+           STUDENT REPORTING SYSTEM
+           ------------------------------------------------------------- */
+        function openReportModal(id, title) {
+            document.getElementById('report-modal-mat-id').value = id;
+            document.getElementById('report-modal-subtitle').innerText = `Reporting: "${title}"`;
+            document.getElementById('report-modal-details').value = '';
+            const m = document.getElementById('modal-report-material');
+            if (m) m.style.display = 'flex';
+        }
+
+        function closeReportModal() {
+            const m = document.getElementById('modal-report-material');
+            if (m) m.style.display = 'none';
+        }
+
+        async function submitStudentReport() {
+            const matId = document.getElementById('report-modal-mat-id').value;
+            const reason = document.getElementById('report-modal-reason').value;
+            const details = document.getElementById('report-modal-details').value.trim();
+            const token = localStorage.getItem('studymate_token') || '';
+
+            try {
+                const res = await fetch('/api/reports/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        material_id: matId,
+                        reason: reason,
+                        details: details
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Report submitted! Moderators will review this material.', 'success');
+                    closeReportModal();
+                } else {
+                    showToast(data.error || 'Failed submitting report.', 'error');
+                }
+            } catch(e) {
+                showToast('Error submitting report: ' + e, 'error');
+            }
         }
 
         /* -------------------------------------------------------------
@@ -1537,15 +1661,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 top5.forEach(m => {
                     tbody.innerHTML += `
                         <tr>
-                            <td><strong>${m.title}</strong></td>
-                            <td>${m.subject}</td>
+                            <td><strong>${escapeHtml(m.title)}</strong></td>
+                            <td>${escapeHtml(m.subject)}</td>
                             <td>${m.semester}</td>
-                            <td><span class="badge badge-type">${m.material_type}</span></td>
-                            <td>${m.date_added}</td>
+                            <td><span class="badge badge-type">${escapeHtml(m.material_type)}</span></td>
+                            <td>${escapeHtml(m.date_added)}</td>
                             <td>
                                 <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View</a>
                                 <a href="/api/view?id=${m.id}&download=1" class="btn-action btn-down">⬇️ Download</a>
                                 <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 Open on PC</button>
+                                <button class="btn-action btn-report" onclick="openReportModal(${m.id}, '${escapeAttr(m.title)}')">🚩 Report</button>
                             </td>
                         </tr>
                     `;
@@ -1582,17 +1707,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     const starIcon = isFav ? '⭐' : '☆';
                     tbody.innerHTML += `
                         <tr>
-                            <td><strong>${m.title}</strong></td>
-                            <td>${m.subject}</td>
-                            <td>${m.topic || '—'}</td>
+                            <td><strong>${escapeHtml(m.title)}</strong></td>
+                            <td>${escapeHtml(m.subject)}</td>
+                            <td>${escapeHtml(m.topic || '—')}</td>
                             <td>${m.semester}</td>
-                            <td><span class="badge badge-type">${m.material_type}</span></td>
+                            <td><span class="badge badge-type">${escapeHtml(m.material_type)}</span></td>
                             <td>${starIcon}</td>
                             <td>
                                 <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View</a>
                                 <a href="/api/view?id=${m.id}&download=1" class="btn-action btn-down">⬇️ Download</a>
                                 <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 PC</button>
                                 <button class="btn-action btn-star" onclick="toggleFav(${m.id})">${starIcon} ${isFav ? 'Unstar' : 'Star'}</button>
+                                <button class="btn-action btn-report" onclick="openReportModal(${m.id}, '${escapeAttr(m.title)}')">🚩 Report</button>
                             </td>
                         </tr>
                     `;
@@ -1623,16 +1749,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 list.forEach(m => {
                     tbody.innerHTML += `
                         <tr>
-                            <td><strong>${m.title}</strong></td>
-                            <td>${m.subject}</td>
-                            <td>${m.topic || '—'}</td>
+                            <td><strong>${escapeHtml(m.title)}</strong></td>
+                            <td>${escapeHtml(m.subject)}</td>
+                            <td>${escapeHtml(m.topic || '—')}</td>
                             <td>${m.semester}</td>
-                            <td><span class="badge badge-type">${m.material_type}</span></td>
+                            <td><span class="badge badge-type">${escapeHtml(m.material_type)}</span></td>
                             <td>
                                 <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View</a>
                                 <a href="/api/view?id=${m.id}&download=1" class="btn-action btn-down">⬇️ Download</a>
                                 <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 PC</button>
                                 <button class="btn-action btn-star" onclick="toggleFav(${m.id})">❌ Remove</button>
+                                <button class="btn-action btn-report" onclick="openReportModal(${m.id}, '${escapeAttr(m.title)}')">🚩 Report</button>
                             </td>
                         </tr>
                     `;
@@ -1697,9 +1824,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         file_base64: base64Data
                     };
 
+                    const token = localStorage.getItem('studymate_token') || '';
                     const res = await fetch('/api/upload', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify(payload)
                     });
 
@@ -1783,20 +1914,161 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         sys.stdout.write("%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args))
 
+    def do_OPTIONS(self):
+        """Handle CORS preflight requests."""
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        self.send_header("Access-Control-Max-Age", "86400")
+        self.end_headers()
+
+    # -------------------------------------------------------------------------
+    # Authentication, Session, and Rate-Limiting Helpers
+    # -------------------------------------------------------------------------
+    def get_client_ip(self):
+        """Extract the true client IP from proxy headers or socket connection."""
+        forwarded = self.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        if self.client_address:
+            return str(self.client_address[0])
+        return "127.0.0.1"
+
+    def check_rate_limit(self, ip):
+        """Check if an IP address has exceeded failed login thresholds."""
+        now = time.time()
+        record = FAILED_LOGIN_ATTEMPTS.get(ip)
+        if record:
+            count, first_time, last_time = record
+            if now - last_time > RATE_LIMIT_WINDOW_SECONDS:
+                FAILED_LOGIN_ATTEMPTS.pop(ip, None)
+                return True, 0
+            if count >= RATE_LIMIT_MAX_ATTEMPTS:
+                remaining = int(RATE_LIMIT_WINDOW_SECONDS - (now - last_time))
+                return False, max(1, remaining)
+        return True, 0
+
+    def record_failed_login(self, ip):
+        """Increment failed login attempt count for an IP address."""
+        now = time.time()
+        record = FAILED_LOGIN_ATTEMPTS.get(ip)
+        if record:
+            count, first_time, last_time = record
+            if now - last_time > RATE_LIMIT_WINDOW_SECONDS:
+                FAILED_LOGIN_ATTEMPTS[ip] = (1, now, now)
+            else:
+                FAILED_LOGIN_ATTEMPTS[ip] = (count + 1, first_time, now)
+        else:
+            FAILED_LOGIN_ATTEMPTS[ip] = (1, now, now)
+
+    def reset_failed_logins(self, ip):
+        """Clear rate limiting counter for an IP address upon successful sign-in."""
+        FAILED_LOGIN_ATTEMPTS.pop(ip, None)
+
+    def get_token_from_request(self):
+        """Extract session token from Authorization header, Cookie, or Query parameter."""
+        # 1. Bearer Token
+        auth_hdr = self.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            return auth_hdr[7:].strip()
+
+        # 2. Cookie header: session_token=<hex>
+        cookie_hdr = self.headers.get("Cookie", "")
+        if cookie_hdr:
+            for part in cookie_hdr.split(";"):
+                part = part.strip()
+                if part.startswith("session_token="):
+                    return part.split("=", 1)[1].strip()
+
+        # 3. URL Query parameter ?token=<hex>
+        parsed = urllib.parse.urlparse(self.path)
+        query = urllib.parse.parse_qs(parsed.query)
+        token_param = query.get("token", [None])[0]
+        if token_param:
+            return token_param.strip()
+
+        return None
+
+    def get_authenticated_user(self):
+        """Validate request token against database sessions and return user dict."""
+        token = self.get_token_from_request()
+        if not token:
+            return None
+        return database.get_user_by_session(token)
+
+    def require_admin(self):
+        """
+        Server-side role-based access control guard.
+        Validates administrator session. Returns user dict on success,
+        or sends HTTP 401/403 and returns None on failure.
+        """
+        user = self.get_authenticated_user()
+        if not user:
+            self.send_json({
+                "success": False,
+                "error": "Authentication required. Please log in as an administrator."
+            }, status=401)
+            return None
+
+        if str(user.get("status", "")).lower() == "suspended":
+            self.send_json({
+                "success": False,
+                "error": "Access denied: Your administrator account has been suspended."
+            }, status=403)
+            return None
+
+        if str(user.get("role", "")).lower() != "admin":
+            self.send_json({
+                "success": False,
+                "error": "Forbidden: Administrator privileges required to access this resource."
+            }, status=403)
+            return None
+
+        return user
+
+    def send_json(self, obj, status=200, extra_headers=None):
+        """Helper to send JSON response with standard CORS & cache headers."""
+        payload = json.dumps(obj).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        if extra_headers:
+            for k, v in extra_headers.items():
+                self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(payload)
+
+    # -------------------------------------------------------------------------
+    # HTTP GET Request Handler
+    # -------------------------------------------------------------------------
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
 
-        # 1. Main Web Application Dashboard & Portal
-        if path == "/" or path == "/index.html" or path == "/login":
+        # 1. Main Student Portal & Login Screen
+        if path in ("/", "/index.html", "/login"):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
 
-        # 2. View Project Report HTML
-        elif path == "/report" or path == "/PROJECT_REPORT.html":
+        # 2. Admin Dashboard Frontend
+        elif path in ("/admin", "/admin/"):
+            if os.path.exists(ADMIN_HTML_PATH):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                with open(ADMIN_HTML_PATH, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_error(404, "admin.html not found on server")
+
+        # 3. View Academic Project Report HTML
+        elif path in ("/report", "/PROJECT_REPORT.html"):
             report_file = os.path.join(BASE_DIR, "PROJECT_REPORT.html")
             if os.path.exists(report_file):
                 self.send_response(200)
@@ -1807,7 +2079,7 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_error(404, "Report not found")
 
-        # 3. Direct In-Browser File Viewer & Mobile Downloader
+        # 4. Direct In-Browser File Viewer & Mobile Downloader
         elif path == "/api/view":
             mat_id = query.get("id", [None])[0]
             if not mat_id:
@@ -1818,6 +2090,19 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             if not record:
                 self.send_error(404, "Material record not found")
                 return
+
+            # Check if material is quarantined
+            mat_status = record[9] if len(record) > 9 else "active"
+            if mat_status == "quarantined":
+                req_user = self.get_authenticated_user()
+                if not req_user or str(req_user.get("role", "")).lower() != "admin":
+                    self.send_response(403)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(
+                        b"<h2>Material Quarantined</h2><p>This study material is currently under administrative review.</p>"
+                    )
+                    return
 
             stored_path = record[6]
             resolved_path = resolve_file_path(stored_path)
@@ -1830,6 +2115,9 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                     f"<h2>File not found on server</h2><p>Stored: {stored_path}</p><p>Please re-upload this material using the portal.</p>".encode("utf-8")
                 )
                 return
+
+            # Track download metric
+            database.increment_download_count(mat_id)
 
             # Determine MIME type accurately with office/pdf fallbacks
             content_type, _ = mimetypes.guess_type(resolved_path)
@@ -1849,7 +2137,6 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             filename = os.path.basename(resolved_path)
             file_size = os.path.getsize(resolved_path)
 
-            # Check if user requested direct download or file is non-previewable
             download_param = query.get("download", ["0"])[0] == "1"
             is_previewable = content_type in (
                 "application/pdf", "image/png", "image/jpeg", 
@@ -1869,7 +2156,6 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "public, max-age=3600")
             self.end_headers()
 
-            # Stream file in 64KB chunks to conserve server RAM and optimize mobile transfer
             try:
                 with open(resolved_path, "rb") as f:
                     while True:
@@ -1880,12 +2166,12 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError):
                 pass
 
-        # 4. API: Dashboard Stats
+        # 5. API: Dashboard Stats (Public Student Portal)
         elif path == "/api/stats":
             stats = database.get_dashboard_stats()
             self.send_json(stats)
 
-        # 5. API: Materials List (Search & Filter)
+        # 6. API: Materials List (Public Student Portal - active materials only)
         elif path == "/api/materials":
             search_query = query.get("search", [""])[0]
             semester = query.get("semester", ["All"])[0]
@@ -1901,6 +2187,9 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
             result = []
             for r in rows:
+                status_val = r[9] if len(r) > 9 else "active"
+                if status_val == "quarantined":
+                    continue
                 result.append({
                     "id": r[0],
                     "title": r[1],
@@ -1914,7 +2203,7 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 })
             self.send_json(result)
 
-        # 6. API: Launch on Desktop via Windows OS
+        # 7. API: Launch on Desktop via Windows OS
         elif path == "/api/open":
             mat_id = query.get("id", [None])[0]
             if not mat_id:
@@ -1944,44 +2233,302 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_json({"success": False, "message": f"Could not open file: {e}"})
 
+        # ---------------------------------------------------------------------
+        # ADMIN API ENDPOINTS (PROTECTED VIA require_admin)
+        # ---------------------------------------------------------------------
+        elif path == "/api/admin/overview":
+            user = self.require_admin()
+            if not user:
+                return
+            stats = database.get_admin_dashboard_stats()
+            self.send_json({"success": True, "stats": stats})
+
+        elif path == "/api/admin/files":
+            user = self.require_admin()
+            if not user:
+                return
+            q_str = query.get("search", [""])[0]
+            subj = query.get("subject", ["All"])[0]
+            m_type = query.get("type", ["All"])[0]
+            status_f = query.get("status", ["All"])[0]
+            sort_by = query.get("sort_by", ["id"])[0]
+            sort_order = query.get("sort_order", ["desc"])[0]
+            page = int(query.get("page", ["1"])[0] or 1)
+            per_page = int(query.get("per_page", ["10"])[0] or 10)
+
+            data = database.get_all_materials_admin(
+                search_query=q_str,
+                subject=subj,
+                material_type=m_type,
+                status=status_f,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                page=page,
+                per_page=per_page
+            )
+            self.send_json({"success": True, **data})
+
+        elif path == "/api/admin/files/export":
+            user = self.require_admin()
+            if not user:
+                return
+            q_str = query.get("search", [""])[0]
+            subj = query.get("subject", ["All"])[0]
+
+            data = database.get_all_materials_admin(
+                search_query=q_str,
+                subject=subj,
+                per_page=10000
+            )
+            materials = data.get("materials", [])
+
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(["ID", "Title", "Subject", "Topic", "Semester", "Type", "File Size Bytes", "Uploader", "Status", "Downloads", "Date Added"])
+            for m in materials:
+                writer.writerow([
+                    m.get("id"),
+                    m.get("title"),
+                    m.get("subject"),
+                    m.get("topic") or "",
+                    m.get("semester"),
+                    m.get("material_type"),
+                    m.get("file_size"),
+                    m.get("uploader_name") or "Student",
+                    m.get("status"),
+                    m.get("download_count"),
+                    m.get("date_added")
+                ])
+
+            csv_bytes = output.getvalue().encode("utf-8-sig")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Disposition", 'attachment; filename="studymate_materials_export.csv"')
+            self.send_header("Content-Length", str(len(csv_bytes)))
+            self.end_headers()
+            self.wfile.write(csv_bytes)
+
+        elif path == "/api/admin/users":
+            user = self.require_admin()
+            if not user:
+                return
+            q_str = query.get("search", [""])[0]
+            role = query.get("role", ["All"])[0]
+            status = query.get("status", ["All"])[0]
+            page = int(query.get("page", ["1"])[0] or 1)
+            per_page = int(query.get("per_page", ["10"])[0] or 10)
+
+            data = database.get_all_users_admin(
+                search_query=q_str,
+                role=role,
+                status=status,
+                page=page,
+                per_page=per_page
+            )
+            self.send_json({"success": True, **data})
+
+        elif path == "/api/admin/categories":
+            user = self.require_admin()
+            if not user:
+                return
+            categories = database.get_all_categories()
+            self.send_json({"success": True, "categories": categories})
+
+        elif path == "/api/admin/reports":
+            user = self.require_admin()
+            if not user:
+                return
+            status = query.get("status", ["All"])[0]
+            page = int(query.get("page", ["1"])[0] or 1)
+            per_page = int(query.get("per_page", ["10"])[0] or 10)
+
+            data = database.get_all_reports_admin(
+                status=status,
+                page=page,
+                per_page=per_page
+            )
+            self.send_json({"success": True, **data})
+
+        elif path == "/api/admin/audit_logs":
+            user = self.require_admin()
+            if not user:
+                return
+            q_str = query.get("search", [""])[0]
+            action = query.get("action", ["All"])[0]
+            page = int(query.get("page", ["1"])[0] or 1)
+            per_page = int(query.get("per_page", ["15"])[0] or 15)
+
+            data = database.get_audit_logs(
+                search_query=q_str,
+                action=action,
+                page=page,
+                per_page=per_page
+            )
+            self.send_json({"success": True, **data})
+
+        elif path == "/api/admin/storage":
+            user = self.require_admin()
+            if not user:
+                return
+            info = database.get_storage_breakdown(UPLOADS_DIR)
+            self.send_json({"success": True, "storage": info})
+
+        elif path == "/api/admin/settings":
+            user = self.require_admin()
+            if not user:
+                return
+            settings = database.get_all_settings()
+            self.send_json({"success": True, "settings": settings})
+
         else:
             self.send_error(404, "Page Not Found")
 
+    # -------------------------------------------------------------------------
+    # HTTP POST Request Handler
+    # -------------------------------------------------------------------------
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        ip = self.get_client_ip()
 
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else "{}"
-        data = json.loads(body) if body else {}
+        try:
+            data = json.loads(body) if body else {}
+        except Exception:
+            data = {}
 
-        # 1. API: User Login
+        # 1. API: User / Admin Login (With Rate Limiting, Audit Logs, and Session Tokens)
         if path == "/api/login":
+            allowed, wait_sec = self.check_rate_limit(ip)
+            if not allowed:
+                self.send_json({
+                    "success": False,
+                    "error": f"Too many failed login attempts. Please wait {wait_sec} seconds before trying again."
+                }, status=429)
+                return
+
             username = data.get("username", "").strip()
             password = data.get("password", "").strip()
             if not username or not password:
-                self.send_json({"success": False, "error": "Username and password are required."})
+                self.send_json({"success": False, "error": "Username and password are required."}, status=400)
                 return
+
             user = database.authenticate_user(username, password)
             if user:
-                self.send_json({"success": True, "user": user})
-            else:
-                self.send_json({"success": False, "error": "Invalid username or password. Please try again."})
+                if str(user.get("status", "")).lower() == "suspended":
+                    self.send_json({
+                        "success": False,
+                        "error": "Your account has been suspended by an administrator."
+                    }, status=403)
+                    return
 
-        # 2. API: User Registration
+                self.reset_failed_logins(ip)
+                token = database.create_session(user["id"], user_agent=self.headers.get("User-Agent", ""))
+                database.add_audit_log(
+                    admin_id=user["id"],
+                    admin_username=user["username"],
+                    action="LOGIN_SUCCESS",
+                    entity_type="auth",
+                    entity_id=user["id"],
+                    details=f"User signed in successfully with role '{user.get('role', 'Student')}'",
+                    ip_address=ip,
+                    status="success"
+                )
+                cookie_val = f"session_token={token}; Path=/; HttpOnly; SameSite=Lax"
+                self.send_json(
+                    {"success": True, "user": user, "token": token},
+                    extra_headers={"Set-Cookie": cookie_val}
+                )
+            else:
+                self.record_failed_login(ip)
+                database.add_audit_log(
+                    admin_id=None,
+                    admin_username=username,
+                    action="LOGIN_FAILED",
+                    entity_type="auth",
+                    details=f"Failed login attempt for username '{username}'",
+                    ip_address=ip,
+                    status="failed"
+                )
+                self.send_json({
+                    "success": False,
+                    "error": "Invalid username or password. Please try again."
+                }, status=401)
+
+        # 2. API: Logout
+        elif path == "/api/logout":
+            token = self.get_token_from_request()
+            user = database.get_user_by_session(token) if token else None
+            if token:
+                database.delete_session(token)
+            if user:
+                database.add_audit_log(
+                    admin_id=user["id"],
+                    admin_username=user["username"],
+                    action="LOGOUT",
+                    entity_type="auth",
+                    entity_id=user["id"],
+                    details="User signed out",
+                    ip_address=ip,
+                    status="success"
+                )
+            clear_cookie = "session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax"
+            self.send_json({"success": True}, extra_headers={"Set-Cookie": clear_cookie})
+
+        # 3. API: User Registration
         elif path == "/api/register":
+            allow_reg = database.get_setting("allow_student_registration", "true")
+            if str(allow_reg).lower() == "false":
+                self.send_json({
+                    "success": False,
+                    "error": "Student self-registration is currently disabled by administrator."
+                }, status=403)
+                return
+
             username = data.get("username", "").strip()
             password = data.get("password", "").strip()
             full_name = data.get("full_name", "").strip()
-            success, result = database.register_user(username, password, full_name)
+            email = data.get("email", "").strip()
+
+            success, result = database.register_user(username, password, full_name, role="Student", email=email)
             if success:
                 user = database.authenticate_user(username, password)
-                self.send_json({"success": True, "user": user, "message": "Account created successfully!"})
+                token = database.create_session(user["id"], user_agent=self.headers.get("User-Agent", ""))
+                database.add_audit_log(
+                    admin_id=user["id"],
+                    admin_username=user["username"],
+                    action="USER_REGISTER",
+                    entity_type="user",
+                    entity_id=user["id"],
+                    details=f"New student registration for '{username}'",
+                    ip_address=ip,
+                    status="success"
+                )
+                cookie_val = f"session_token={token}; Path=/; HttpOnly; SameSite=Lax"
+                self.send_json({
+                    "success": True,
+                    "user": user,
+                    "token": token,
+                    "message": "Account created successfully!"
+                }, extra_headers={"Set-Cookie": cookie_val})
             else:
-                self.send_json({"success": False, "error": result})
+                self.send_json({"success": False, "error": result}, status=400)
 
-        # 3. API: Upload & Save Material
+        # 4. API: Upload & Save Material (Validates size, extensions, and maintenance mode)
         elif path == "/api/upload":
+            user = self.get_authenticated_user()
+
+            # Maintenance mode check
+            maintenance = database.get_setting("maintenance_mode", "false")
+            if str(maintenance).lower() == "true":
+                if not user or str(user.get("role", "")).lower() != "admin":
+                    self.send_json({
+                        "success": False,
+                        "error": "StudyMate is currently under maintenance. File uploads are temporarily paused."
+                    }, status=503)
+                    return
+
             try:
                 title = data.get("title", "").strip()
                 subject = data.get("subject", "").strip()
@@ -1990,22 +2537,57 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 material_type = data.get("material_type", "Notes").strip()
                 raw_filename = data.get("filename", "uploaded_file.bin")
                 file_b64 = data.get("file_base64", "")
+                description = data.get("description", "").strip()
 
-                safe_name = os.path.basename(raw_filename.replace("\\", "/")).replace(" ", "_")
+                if not title or not subject:
+                    self.send_json({"success": False, "error": "Title and subject are required."}, status=400)
+                    return
+
+                # Extension validation
+                f_ext = os.path.splitext(raw_filename)[1].lower().lstrip(".")
+                allowed_ext_str = database.get_setting("allowed_extensions", "pdf,ppt,pptx,doc,docx,txt,zip,rar,png,jpg,jpeg")
+                allowed_list = [x.strip().lower() for x in allowed_ext_str.split(",") if x.strip()]
+                if f_ext not in allowed_list:
+                    self.send_json({
+                        "success": False,
+                        "error": f"File type '.{f_ext}' is not allowed. Permitted types: {allowed_ext_str}"
+                    }, status=400)
+                    return
+
+                # Decode file bytes
+                file_bytes = base64.b64decode(file_b64)
+                file_size = len(file_bytes)
+
+                # Size validation
+                max_mb = int(database.get_setting("max_upload_size_mb", "25"))
+                if file_size > max_mb * 1024 * 1024:
+                    self.send_json({
+                        "success": False,
+                        "error": f"File size ({file_size // (1024*1024)} MB) exceeds server limit of {max_mb} MB."
+                    }, status=400)
+                    return
+
+                # Sanitize filename against directory traversal
+                clean_name = os.path.basename(raw_filename.replace("\\", "/"))
+                safe_name = "".join(c for c in clean_name if c.isalnum() or c in "._- ").strip().replace(" ", "_")
+                if not safe_name:
+                    safe_name = "upload.bin"
+
                 dest_path = os.path.join(UPLOADS_DIR, safe_name)
-
                 base_name, ext = os.path.splitext(safe_name)
                 counter = 1
                 while os.path.exists(dest_path):
                     dest_path = os.path.join(UPLOADS_DIR, f"{base_name}_{counter}{ext}")
                     counter += 1
 
-                file_bytes = base64.b64decode(file_b64)
                 with open(dest_path, "wb") as f:
                     f.write(file_bytes)
 
                 saved_filename = os.path.basename(dest_path)
                 relative_path = f"uploads/{saved_filename}"
+
+                uploader_id = user["id"] if user else None
+                uploader_name = (user.get("full_name") or user.get("username")) if user else "Student"
 
                 new_id = database.add_material(
                     title=title,
@@ -2013,41 +2595,424 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                     topic=topic,
                     semester=semester,
                     material_type=material_type,
-                    file_path=relative_path
+                    file_path=relative_path,
+                    uploader_id=uploader_id,
+                    uploader_name=uploader_name,
+                    file_size=file_size,
+                    status="active",
+                    description=description
+                )
+
+                database.add_audit_log(
+                    admin_id=uploader_id,
+                    admin_username=uploader_name,
+                    action="MATERIAL_UPLOAD",
+                    entity_type="material",
+                    entity_id=new_id,
+                    details=f"Uploaded '{title}' ({saved_filename}, {file_size} bytes)",
+                    ip_address=ip,
+                    status="success"
                 )
 
                 self.send_json({"success": True, "id": new_id, "file_path": relative_path})
 
             except Exception as e:
-                self.send_json({"success": False, "error": str(e)})
+                self.send_json({"success": False, "error": str(e)}, status=500)
 
-        # 4. API: Toggle Favorite
+        # 5. API: Toggle Favorite
         elif path == "/api/toggle_favorite":
             mat_id = data.get("id")
             new_status = database.toggle_favorite(mat_id)
             self.send_json({"success": True, "new_status": new_status})
 
+        # 6. API: Student Issue Reporting
+        elif path == "/api/reports/submit":
+            user = self.get_authenticated_user()
+            mat_id = data.get("material_id")
+            reason = data.get("reason", "").strip()
+            details = data.get("details", "").strip()
+
+            if not mat_id or not reason:
+                self.send_json({"success": False, "error": "Material ID and report reason are required."}, status=400)
+                return
+
+            rep_id = database.submit_report(
+                material_id=int(mat_id),
+                reporter_id=user["id"] if user else None,
+                reporter_name=(user.get("full_name") or user.get("username")) if user else "Student",
+                reason=reason,
+                details=details
+            )
+
+            database.add_audit_log(
+                admin_id=user["id"] if user else None,
+                admin_username=(user.get("username") if user else "Student"),
+                action="REPORT_SUBMITTED",
+                entity_type="report",
+                entity_id=rep_id,
+                details=f"Reported material #{mat_id} for '{reason}'",
+                ip_address=ip,
+                status="success"
+            )
+
+            self.send_json({"success": True, "report_id": rep_id})
+
+        # ---------------------------------------------------------------------
+        # ADMIN POST ACTIONS (PROTECTED VIA require_admin)
+        # ---------------------------------------------------------------------
+        elif path == "/api/admin/files/rename":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            mat_id = data.get("id")
+            new_title = data.get("new_title", "").strip()
+            new_filename = data.get("new_filename", "").strip()
+            success, msg = database.admin_rename_material(mat_id, new_title, new_filename, UPLOADS_DIR)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="FILE_RENAME",
+                entity_type="material",
+                entity_id=mat_id,
+                details=f"Renamed material #{mat_id} -> Title: '{new_title}', File: '{new_filename}' ({msg})",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/files/edit":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            mat_id = data.get("id")
+            success, msg = database.admin_edit_material_metadata(
+                material_id=mat_id,
+                title=data.get("title", "").strip(),
+                subject=data.get("subject", "").strip(),
+                topic=data.get("topic", "").strip(),
+                semester=int(data.get("semester", 3)),
+                material_type=data.get("material_type", "Notes").strip(),
+                status=data.get("status", "active").strip(),
+                description=data.get("description", "").strip()
+            )
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="METADATA_EDIT",
+                entity_type="material",
+                entity_id=mat_id,
+                details=f"Edited metadata for material #{mat_id}: {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/files/quarantine":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            mat_id = data.get("id")
+            action = data.get("action", "quarantine")
+            is_quarantine = (action == "quarantine")
+            success, msg = database.admin_quarantine_material(mat_id, quarantine=is_quarantine)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="FILE_QUARANTINE" if is_quarantine else "FILE_UNQUARANTINE",
+                entity_type="material",
+                entity_id=mat_id,
+                details=f"{action.capitalize()} material #{mat_id}: {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/files/delete":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            single_id = data.get("id")
+            bulk_ids = data.get("ids", [])
+            ids_to_delete = [single_id] if single_id else bulk_ids
+
+            deleted_count = 0
+            errors = []
+            for mid in ids_to_delete:
+                success, msg = database.admin_delete_material(mid, UPLOADS_DIR)
+                if success:
+                    deleted_count += 1
+                else:
+                    errors.append(f"#{mid}: {msg}")
+
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="FILE_DELETE",
+                entity_type="material",
+                details=f"Deleted {deleted_count} material(s): {ids_to_delete}",
+                ip_address=ip,
+                status="success" if deleted_count > 0 else "failed"
+            )
+
+            if deleted_count > 0 or not errors:
+                self.send_json({"success": True, "deleted_count": deleted_count, "errors": errors})
+            else:
+                self.send_json({"success": False, "error": "; ".join(errors)}, status=400)
+
+        elif path == "/api/admin/users/status":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            user_id = data.get("user_id")
+            new_status = data.get("status", "active")
+            success, msg = database.update_user_status(user_id, new_status)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="USER_STATUS_CHANGE",
+                entity_type="user",
+                entity_id=user_id,
+                details=f"Updated user #{user_id} status to '{new_status}': {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/users/role":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            user_id = data.get("user_id")
+            new_role = data.get("role", "Student")
+            success, msg = database.update_user_role(user_id, new_role)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="USER_ROLE_CHANGE",
+                entity_type="user",
+                entity_id=user_id,
+                details=f"Updated user #{user_id} role to '{new_role}': {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/users/delete":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            user_id = data.get("user_id")
+            success, msg = database.delete_user(user_id)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="USER_DELETE",
+                entity_type="user",
+                entity_id=user_id,
+                details=f"Deleted user #{user_id}: {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/categories/create":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            name = data.get("name", "").strip()
+            code = data.get("code", "").strip()
+            semester = int(data.get("semester", 3))
+            desc = data.get("description", "").strip()
+            success, msg = database.create_category(name, code, semester, desc)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="CATEGORY_CREATE",
+                entity_type="category",
+                details=f"Created subject '{name}' ({code})",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/categories/edit":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            cat_id = data.get("id")
+            name = data.get("name", "").strip()
+            code = data.get("code", "").strip()
+            semester = int(data.get("semester", 3))
+            desc = data.get("description", "").strip()
+            success, msg = database.update_category(cat_id, name, code, semester, desc)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="CATEGORY_EDIT",
+                entity_type="category",
+                entity_id=cat_id,
+                details=f"Updated subject #{cat_id} '{name}': {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/categories/delete":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            cat_id = data.get("id")
+            reassign_to = data.get("reassign_to")
+            success, msg = database.delete_category(cat_id, reassign_to)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="CATEGORY_DELETE",
+                entity_type="category",
+                entity_id=cat_id,
+                details=f"Deleted subject #{cat_id} (reassigned to '{reassign_to}'): {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/categories/merge":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            src = data.get("source_name", "").strip()
+            dst = data.get("target_name", "").strip()
+            success, msg = database.merge_categories(src, dst)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="CATEGORY_MERGE",
+                entity_type="category",
+                details=f"Merged subject '{src}' into '{dst}': {msg}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/reports/resolve":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            rep_id = data.get("report_id")
+            new_status = data.get("status", "resolved")
+            admin_notes = data.get("admin_notes", "").strip()
+            success, msg = database.resolve_report(rep_id, admin_user["id"], new_status, admin_notes)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="REPORT_RESOLVE",
+                entity_type="report",
+                entity_id=rep_id,
+                details=f"Moderated report #{rep_id} as '{new_status}': {admin_notes}",
+                ip_address=ip,
+                status="success" if success else "failed"
+            )
+            if success:
+                self.send_json({"success": True, "message": msg})
+            else:
+                self.send_json({"success": False, "error": msg}, status=400)
+
+        elif path == "/api/admin/storage/scan":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            scan = database.scan_storage_consistency(UPLOADS_DIR)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="STORAGE_SCAN",
+                entity_type="storage",
+                details=f"Consistency scan: {scan['valid_count']} valid, {scan['missing_count']} missing, {scan['orphaned_count']} orphaned",
+                ip_address=ip,
+                status="success"
+            )
+            self.send_json({"success": True, "scan": scan})
+
+        elif path == "/api/admin/settings/update":
+            admin_user = self.require_admin()
+            if not admin_user:
+                return
+            k = data.get("key", "").strip()
+            v = str(data.get("value", "")).strip()
+            if not k:
+                self.send_json({"success": False, "error": "Setting key is required."}, status=400)
+                return
+            database.set_setting(k, v)
+            database.add_audit_log(
+                admin_id=admin_user["id"],
+                admin_username=admin_user["username"],
+                action="SETTING_UPDATE",
+                entity_type="setting",
+                details=f"Updated setting '{k}' = '{v}'",
+                ip_address=ip,
+                status="success"
+            )
+            self.send_json({"success": True, "message": f"Setting '{k}' updated successfully."})
+
         else:
             self.send_error(404, "Endpoint Not Found")
 
-    def send_json(self, obj):
-        payload = json.dumps(obj).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
 
 def start_server():
+    """Start StudyMate production web server with admin control."""
     database.init_db()
+
+    # 1. Automatic Environment Variable Administrator provisioning (Render / Cloud deployment)
+    env_admin_user = os.environ.get("ADMIN_USERNAME", "").strip()
+    env_admin_pass = os.environ.get("ADMIN_PASSWORD", "").strip()
+    if env_admin_user and env_admin_pass:
+        existing = database.get_user_by_username(env_admin_user)
+        if not existing:
+            database.register_user(env_admin_user, env_admin_pass, "System Administrator", role="Admin", email="admin@studymate.local")
+            print(f"[Admin Setup] Created environment administrator: {env_admin_user}")
+
+    # 2. Guarantee at least one active administrator exists for zero-friction evaluation
+    if database.count_active_admins() == 0:
+        database.register_user("admin", "Admin@123", "System Administrator", role="Admin", email="admin@studymate.local")
+        print("[Admin Setup] Seeded default administrator account: admin / Admin@123")
 
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer((HOST, PORT), StudyMateHTTPRequestHandler) as httpd:
         url = f"http://localhost:{PORT}"
         print("=" * 60)
-        print(" StudyMate Production Server Running with Student Auth")
+        print(" StudyMate Production Server Running with Admin Control")
         print(f" Listening on: http://{HOST}:{PORT} (Local: {url})")
+        print(f" Admin Panel URL: {url}/admin")
         print(f" Uploads directory: {UPLOADS_DIR}")
         print("=" * 60)
         
