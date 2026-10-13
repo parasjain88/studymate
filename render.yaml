@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: studymate
+    runtime: python
+    buildCommand: ""
+    startCommand: python web_app.py
+    envVars:
+      - key: DEPLOY_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: HOST
+        value: 0.0.0.0

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyMate — Academic Project Report</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-light: #dbeafe;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --bg: #f8fafc;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 26px;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+        .meta-box {
+            display: inline-block;
+            background: var(--primary-light);
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        h2 {
+            color: #0f172a;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+            margin-top: 30px;
+            font-size: 19px;
+        }
+        h3 {
+            color: #1e293b;
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 9px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+        pre {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .badge-pass {
+            background: #dcfce7;
+            color: #166534;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .print-btn {
+            display: inline-block;
+            background: var(--primary);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            cursor: pointer;
+            border: none;
+        }
+        .print-btn:hover {
+            background: #1d4ed8;
+        }
+        @media print {
+            .print-btn { display: none; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+
+        <div class="header">
+            <h1>STUDYMATE: SMART STUDY MATERIAL MANAGEMENT AND SEARCH SYSTEM</h1>
+            <div class="subtitle">A Mini Project Submitted in Partial Fulfillment of the Requirements for the Degree of<br>
+            <strong>BACHELOR OF TECHNOLOGY (B.Tech) IN COMPUTER SCIENCE AND ENGINEERING</strong></div>
+            <div class="meta-box">Academic Level: 3rd Semester CSE</div>
+        </div>
+
+        <h2>1. Abstract</h2>
+        <p>In higher education institutions, engineering students continually accumulate hundreds of digital educational assets—including lecture presentations, laboratory instruction manuals, syllabus copies, semester assignments, and previous years' examination papers. Managing these documents across local drives, flash memory, and social messaging downloads frequently results in disorganized file systems and substantial wasted study time prior to examinations.</p>
+        <p>This project presents <strong>StudyMate</strong>, a lightweight, standalone desktop study material management and search application implemented in <strong>Python 3</strong>, <strong>Tkinter</strong>, and <strong>SQLite3</strong>. StudyMate indexes study materials with academic attributes (Subject, Topic, Semester, and Material Type) without duplicating physical files. It features full CRUD operations, multi-field SQL pattern searching via the <code>LIKE</code> operator, dynamic filter combinations, a one-click file launcher utilizing operating system hooks, a bookmarking ("Favorites") mechanism, and defensive error management.</p>
+
+        <h2>2. Problem Statement</h2>
+        <ul>
+            <li><strong>Scattered Storage:</strong> Notes and assignments are scattered across Downloads, Desktop, and cloud drives with arbitrary file names.</li>
+            <li><strong>Wasted Time:</strong> Students waste valuable exam preparation time hunting for specific PDF chapters or lab experiments.</li>
+            <li><strong>No Academic Categorization:</strong> Operating system folder hierarchies do not easily support filtering across multiple dimensions simultaneously (e.g., "Show all Semester 3 Notes for DBMS").</li>
+            <li><strong>Overly Complex Commercial Alternatives:</strong> Commercial document management systems require cloud subscriptions, user logins, continuous internet connectivity, and heavy RAM overhead.</li>
+        </ul>
+
+        <h2>3. Objectives</h2>
+        <ol>
+            <li><strong>Centralization:</strong> To provide a single dashboard interface for organizing all college study materials.</li>
+            <li><strong>Path-Based Indexing:</strong> To record file locations in an SQLite database without duplicating physical files or consuming extra disk space.</li>
+            <li><strong>Multi-Parameter Search:</strong> To implement flexible search functionality across Title, Subject, Topic, and Material Type using SQL <code>LIKE</code> queries.</li>
+            <li><strong>Direct File Execution:</strong> To launch files in their default native desktop viewers with a single click.</li>
+            <li><strong>Rapid Prioritization:</strong> To enable bookmarking of urgent materials into a dedicated "Favorites" view.</li>
+            <li><strong>Defensive Error Handling:</strong> To prevent crashes caused by missing files, empty inputs, or deleted resources.</li>
+        </ol>
+
+        <h2>4. Database Design (SQLite Schema)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraints</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>id</code></td><td>INTEGER</td><td>PRIMARY KEY AUTOINCREMENT</td><td>Unique identifier for each record</td></tr>
+                <tr><td><code>title</code></td><td>TEXT</td><td>NOT NULL</td><td>Title of the study material</td></tr>
+                <tr><td><code>subject</code></td><td>TEXT</td><td>NOT NULL</td><td>Course or subject name (e.g. DBMS, OS)</td></tr>
+                <tr><td><code>topic</code></td><td>TEXT</td><td>NULLABLE</td><td>Specific chapter or unit</td></tr>
+                <tr><td><code>semester</code></td><td>INTEGER</td><td>NOT NULL</td><td>Semester number (1 to 8)</td></tr>
+                <tr><td><code>material_type</code></td><td>TEXT</td><td>NOT NULL</td><td>Notes, PPT, Assignment, Book, etc.</td></tr>
+                <tr><td><code>file_path</code></td><td>TEXT</td><td>NOT NULL</td><td>Absolute path to the file on disk</td></tr>
+                <tr><td><code>date_added</code></td><td>TEXT</td><td>NOT NULL</td><td>Date & time added (YYYY-MM-DD HH:MM)</td></tr>
+                <tr><td><code>favorite</code></td><td>INTEGER</td><td>DEFAULT 0</td><td>1 = Favorite / Starred, 0 = Normal</td></tr>
+            </tbody>
+        </table>
+
+        <h2>5. Software Testing & Verification Results</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Test ID</th>
+                    <th>Test Scenario</th>
+                    <th>Expected Outcome</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>TC-01</td><td>Database Initialization</td><td>studymate.db created with correct schema</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-02</td><td>Sample Data Loading</td><td>5 demo records inserted without duplicates</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-03</td><td>Dashboard Statistics</td><td>Stats return accurate counts for materials, subjects, favorites</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-04</td><td>Search with LIKE</td><td>Keyword "DBMS" returns only matching records</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-05</td><td>Multi-attribute Filter</td><td>Semester=3 and Type=Notes returns filtered items</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-06</td><td>Custom Record Insertion</td><td>New material saved and assigned incremental ID</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-07</td><td>Toggle Favorite</td><td>Value flips from 0 to 1 and back to 0</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-08</td><td>Delete Confirmation</td><td>Record removed from DB; physical file on disk preserved</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-09</td><td>Missing File Handling</td><td>Alert displayed when file path is invalid; app does not crash</td><td><span class="badge-pass">PASS</span></td></tr>
+                <tr><td>TC-10</td><td>GUI View Switching</td><td>All 4 views render without layout or widget errors</td><td><span class="badge-pass">PASS</span></td></tr>
+            </tbody>
+        </table>
+
+        <h2>6. System Architecture Flow</h2>
+        <pre>
+[User in Browser or Desktop] 
+         │
+         ▼
+[StudyMate Interface (ui.py / web_app.py)]
+         │
+         ├── Checks file existence via os.path.exists()
+         │   └── Launches file natively via os.startfile()
+         │
+         ▼
+[Database Layer (database.py)]
+         │
+         ▼
+[SQLite3 Engine (studymate.db)]
+        </pre>
+
+        <h2>7. Conclusion</h2>
+        <p>The <strong>StudyMate</strong> project successfully demonstrates the design and development of an educational desktop tool tailored to engineering students. By combining Python, Tkinter, and SQLite3, the project provides an efficient, lightweight solution to study material organization and search. The system satisfies all requirements of a 3rd-semester B.Tech CSE mini-project, featuring clean modularity, robust error handling, and high practical utility.</p>
+    </div>
+</body>
+</html>

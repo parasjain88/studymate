@@ -1,0 +1,3 @@
+# StudyMate uses 100% Python Standard Library
+# (http.server, sqlite3, json, urllib, base64, mimetypes)
+# Zero external pip packages are required!
