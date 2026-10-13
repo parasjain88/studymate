@@ -21,6 +21,9 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import database
 
+# Base application directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Primary color scheme
 COLOR_PRIMARY = "#2563eb"       # Blue accent
 COLOR_PRIMARY_DARK = "#1d4ed8"  # Darker blue for button hover
@@ -1080,8 +1083,20 @@ class StudyMateApp:
 
         file_path = record[6]  # Index 6 corresponds to file_path
 
+        # Resolve relative and absolute paths across environments
+        target_path = file_path
+        if not os.path.exists(target_path):
+            candidate = os.path.join(BASE_DIR, file_path.replace("\\", "/"))
+            if os.path.exists(candidate):
+                target_path = candidate
+            else:
+                norm_name = os.path.basename(file_path.replace("\\", "/"))
+                candidate2 = os.path.join(BASE_DIR, "uploads", norm_name)
+                if os.path.exists(candidate2):
+                    target_path = candidate2
+
         # Feature 6 & Error Handling: Verify file existence before opening
-        if not os.path.exists(file_path):
+        if not os.path.exists(target_path):
             messagebox.showerror(
                 "File Not Found",
                 "File not found. Please check whether the file has been moved or deleted.\n\n"
@@ -1092,10 +1107,10 @@ class StudyMateApp:
         try:
             # On Windows, os.startfile() opens any file with its default registered program
             if hasattr(os, "startfile"):
-                os.startfile(file_path)
+                os.startfile(target_path)
             else:
                 import webbrowser
-                webbrowser.open(f"file://{os.path.abspath(file_path)}")
+                webbrowser.open(f"file://{os.path.abspath(target_path)}")
         except Exception as e:
             messagebox.showerror("Open Error", f"Could not open file:\n{str(e)}")
 

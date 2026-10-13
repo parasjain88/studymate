@@ -546,6 +546,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
         .btn-view { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
         .btn-view:hover { background: #dbeafe; }
+        .btn-down { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+        .btn-down:hover { background: #dcfce7; }
         .btn-star { background: #fefce8; color: #854d0e; border-color: #fef08a; }
         .btn-star:hover { background: #fef08a; }
         .btn-pc { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
@@ -1541,7 +1543,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                             <td><span class="badge badge-type">${m.material_type}</span></td>
                             <td>${m.date_added}</td>
                             <td>
-                                <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View in Browser</a>
+                                <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View</a>
+                                <a href="/api/view?id=${m.id}&download=1" class="btn-action btn-down">⬇️ Download</a>
                                 <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 Open on PC</button>
                             </td>
                         </tr>
@@ -1587,6 +1590,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                             <td>${starIcon}</td>
                             <td>
                                 <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View</a>
+                                <a href="/api/view?id=${m.id}&download=1" class="btn-action btn-down">⬇️ Download</a>
                                 <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 PC</button>
                                 <button class="btn-action btn-star" onclick="toggleFav(${m.id})">${starIcon} ${isFav ? 'Unstar' : 'Star'}</button>
                             </td>
@@ -1625,8 +1629,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                             <td>${m.semester}</td>
                             <td><span class="badge badge-type">${m.material_type}</span></td>
                             <td>
-                                <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View in Browser</a>
-                                <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 Open on PC</button>
+                                <a href="/api/view?id=${m.id}" target="_blank" class="btn-action btn-view">👁️ View</a>
+                                <a href="/api/view?id=${m.id}&download=1" class="btn-action btn-down">⬇️ Download</a>
+                                <button class="btn-action btn-pc" onclick="openFileDesktop(${m.id})">💻 PC</button>
                                 <button class="btn-action btn-star" onclick="toggleFav(${m.id})">❌ Remove</button>
                             </td>
                         </tr>
@@ -1736,6 +1741,44 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
+
+def resolve_file_path(stored_path):
+    """
+    Robust cross-platform path resolver for StudyMate study materials.
+    Guarantees files open reliably across Windows local machines,
+    Linux cloud containers (such as Render), mobile browsers, and other devices.
+    """
+    if not stored_path:
+        return None
+
+    # Standardize backslashes to forward slashes for universal handling
+    clean_p = str(stored_path).strip().replace("\\", "/")
+
+    # Check 1: Relative path joined with BASE_DIR (e.g. "uploads/notes.pdf")
+    c1 = os.path.normpath(os.path.join(BASE_DIR, clean_p))
+    if os.path.isfile(c1):
+        return c1
+
+    # Check 2: Absolute file path if it exists directly on current operating system
+    if os.path.isfile(stored_path):
+        return stored_path
+
+    # Check 3: Extract filename safely and look inside UPLOADS_DIR
+    # (Handles Windows absolute paths stored in SQLite when running on Linux/Render)
+    filename = os.path.basename(clean_p)
+    if filename:
+        c3 = os.path.join(UPLOADS_DIR, filename)
+        if os.path.isfile(c3):
+            return c3
+
+        # Check 4: Look directly inside BASE_DIR
+        c4 = os.path.join(BASE_DIR, filename)
+        if os.path.isfile(c4):
+            return c4
+
+    return None
+
+
 class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         sys.stdout.write("%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args))
@@ -1764,7 +1807,7 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_error(404, "Report not found")
 
-        # 3. Direct In-Browser File Viewer
+        # 3. Direct In-Browser File Viewer & Mobile Downloader
         elif path == "/api/view":
             mat_id = query.get("id", [None])[0]
             if not mat_id:
@@ -1776,27 +1819,66 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_error(404, "Material record not found")
                 return
 
-            file_path = record[6]
-            if not os.path.exists(file_path):
+            stored_path = record[6]
+            resolved_path = resolve_file_path(stored_path)
+
+            if not resolved_path:
                 self.send_response(404)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
-                self.wfile.write(f"<h2>File not found on disk</h2><p>Path: {file_path}</p>".encode("utf-8"))
+                self.wfile.write(
+                    f"<h2>File not found on server</h2><p>Stored: {stored_path}</p><p>Please re-upload this material using the portal.</p>".encode("utf-8")
+                )
                 return
 
-            content_type, _ = mimetypes.guess_type(file_path)
+            # Determine MIME type accurately with office/pdf fallbacks
+            content_type, _ = mimetypes.guess_type(resolved_path)
             if not content_type:
-                content_type = "application/octet-stream"
+                ext = os.path.splitext(resolved_path)[1].lower()
+                if ext == ".pdf":
+                    content_type = "application/pdf"
+                elif ext in (".ppt", ".pptx"):
+                    content_type = "application/vnd.ms-powerpoint" if ext == ".ppt" else "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                elif ext in (".doc", ".docx"):
+                    content_type = "application/msword" if ext == ".doc" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                elif ext == ".zip":
+                    content_type = "application/zip"
+                else:
+                    content_type = "application/octet-stream"
 
-            filename = os.path.basename(file_path)
+            filename = os.path.basename(resolved_path)
+            file_size = os.path.getsize(resolved_path)
+
+            # Check if user requested direct download or file is non-previewable
+            download_param = query.get("download", ["0"])[0] == "1"
+            is_previewable = content_type in (
+                "application/pdf", "image/png", "image/jpeg", 
+                "image/gif", "image/webp", "text/plain", "text/html"
+            )
+
+            if download_param or not is_previewable:
+                disposition = f"attachment; filename=\"{filename}\""
+            else:
+                disposition = f"inline; filename=\"{filename}\""
+
             self.send_response(200)
             self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(os.path.getsize(file_path)))
-            self.send_header("Content-Disposition", f"inline; filename=\"{filename}\"")
+            self.send_header("Content-Length", str(file_size))
+            self.send_header("Content-Disposition", disposition)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "public, max-age=3600")
             self.end_headers()
 
-            with open(file_path, "rb") as f:
-                self.wfile.write(f.read())
+            # Stream file in 64KB chunks to conserve server RAM and optimize mobile transfer
+            try:
+                with open(resolved_path, "rb") as f:
+                    while True:
+                        chunk = f.read(65536)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
 
         # 4. API: Dashboard Stats
         elif path == "/api/stats":
@@ -1844,19 +1926,20 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Material not found in database"})
                 return
 
-            file_path = record[6]
-            if not os.path.exists(file_path):
+            stored_path = record[6]
+            resolved_path = resolve_file_path(stored_path)
+            if not resolved_path:
                 self.send_json({
                     "success": False,
-                    "message": f"File not found on disk: {file_path}"
+                    "message": f"File not found on server or disk: {stored_path}"
                 })
                 return
 
             try:
                 if hasattr(os, "startfile"):
-                    os.startfile(file_path)
+                    os.startfile(resolved_path)
                 else:
-                    webbrowser.open(f"file://{os.path.abspath(file_path)}")
+                    webbrowser.open(f"file://{os.path.abspath(resolved_path)}")
                 self.send_json({"success": True})
             except Exception as e:
                 self.send_json({"success": False, "message": f"Could not open file: {e}"})
@@ -1908,7 +1991,7 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 raw_filename = data.get("filename", "uploaded_file.bin")
                 file_b64 = data.get("file_base64", "")
 
-                safe_name = os.path.basename(raw_filename).replace(" ", "_")
+                safe_name = os.path.basename(raw_filename.replace("\\", "/")).replace(" ", "_")
                 dest_path = os.path.join(UPLOADS_DIR, safe_name)
 
                 base_name, ext = os.path.splitext(safe_name)
@@ -1921,16 +2004,19 @@ class StudyMateHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 with open(dest_path, "wb") as f:
                     f.write(file_bytes)
 
+                saved_filename = os.path.basename(dest_path)
+                relative_path = f"uploads/{saved_filename}"
+
                 new_id = database.add_material(
                     title=title,
                     subject=subject,
                     topic=topic,
                     semester=semester,
                     material_type=material_type,
-                    file_path=dest_path
+                    file_path=relative_path
                 )
 
-                self.send_json({"success": True, "id": new_id, "file_path": dest_path})
+                self.send_json({"success": True, "id": new_id, "file_path": relative_path})
 
             except Exception as e:
                 self.send_json({"success": False, "error": str(e)})

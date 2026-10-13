@@ -99,6 +99,14 @@ def init_db():
             VALUES (?, ?, ?, ?, ?)
         """, ("student", hash_password("password123"), "Demo Student", "Student", now))
 
+    # Cross-Platform Migration: Normalize legacy Windows absolute paths to relative paths
+    cursor.execute("SELECT id, file_path FROM materials")
+    rows = cursor.fetchall()
+    for row_id, fpath in rows:
+        if fpath and (":\\" in fpath or ":/" in fpath or "\\" in fpath or fpath.startswith("/")):
+            norm_name = os.path.basename(fpath.replace("\\", "/"))
+            cursor.execute("UPDATE materials SET file_path = ? WHERE id = ?", (f"uploads/{norm_name}", row_id))
+
     conn.commit()
     conn.close()
 
@@ -114,11 +122,16 @@ def add_material(title, subject, topic, semester, material_type, file_path):
     # Format current date and time as YYYY-MM-DD HH:MM
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+    # Ensure file_path is stored as a clean relative path for cross-device/cross-platform compatibility
+    norm_path = file_path.strip().replace("\\", "/")
+    if "uploads/" in norm_path or norm_path.startswith("uploads/"):
+        norm_path = "uploads/" + os.path.basename(norm_path)
+
     # Use parameterized query (?) to safely insert data and prevent SQL injection
     cursor.execute("""
         INSERT INTO materials (title, subject, topic, semester, material_type, file_path, date_added, favorite)
         VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    """, (title.strip(), subject.strip(), topic.strip(), int(semester), material_type.strip(), file_path.strip(), current_time))
+    """, (title.strip(), subject.strip(), topic.strip(), int(semester), material_type.strip(), norm_path, current_time))
 
     conn.commit()
     new_id = cursor.lastrowid
