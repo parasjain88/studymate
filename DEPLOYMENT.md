@@ -87,8 +87,31 @@ If you have Docker installed or are deploying to a VPS (DigitalOcean, AWS EC2, L
 
 | File | Purpose |
 | :--- | :--- |
-| `web_app.py` | Production HTTP server binding to `0.0.0.0` and reading `$PORT` |
+| `web_app.py` | Production HTTP server binding to `0.0.0.0`, reading `$PORT`, with mobile-first responsive UI |
 | `Procfile` | Specifies `web: python web_app.py` for cloud platforms |
 | `Dockerfile` | Containerized setup for cloud/VPS deployments |
 | `render.yaml` | 1-click blueprint for Render.com |
 | `requirements.txt`| Cloud build pack compatibility |
+
+---
+
+## 📱 Mobile Experience on Render
+
+StudyMate is optimized for Android & iOS smartphones:
+
+- **Mobile App Header**: Sticky top navigation bar with hamburger menu (☰) and profile avatar.
+- **Slide-Out Off-Canvas Drawer**: Smooth slide-in sidebar with backdrop blur and touch dismiss.
+- **Bottom Navigation Bar**: Fixed thumb-friendly app bar (Home, Upload, Search, Favorites) positioned within safe display areas.
+- **Responsive Tables**: Touch-scrollable table containers with swipe indicators preventing horizontal layout shifts.
+- **Native File Picker**: Tapping the upload zone opens the device's native file selector (Documents, Camera, Gallery, Files).
+- **iOS & Android Form Optimization**: Inputs use `16px` font sizing to prevent automatic browser zoom on mobile focus.
+- **In-Browser File Viewing**: Tapping **👁️ View** opens uploaded study materials directly inside mobile PDF/browser viewers.
+
+### Updating Your Live Deployment on Render:
+When you make changes locally, simply push them to your repository:
+```bash
+git add .
+git commit -m "Update mobile responsive UI"
+git push origin main
+```
+Render will automatically detect the commit and redeploy your service within 1–2 minutes!

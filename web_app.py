@@ -45,7 +45,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>StudyMate — Student Portal & Study Material Finder</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,13 +70,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             --warning: #f59e0b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
         body {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
         }
 
         /* Toast Notifications */
@@ -570,6 +576,398 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: var(--primary);
             font-weight: 700;
         }
+
+        /* -------------------------------------------------------------
+           MOBILE NAVIGATION & RESPONSIVE COMPONENTS
+           ------------------------------------------------------------- */
+        .mobile-top-bar { display: none; }
+        .drawer-backdrop { display: none; }
+        .sidebar-close-btn { display: none; }
+        .mobile-bottom-nav { display: none; }
+        .mobile-table-hint { display: none; }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Tablet & Mobile Styles (<= 768px) */
+        @media (max-width: 768px) {
+            html, body {
+                height: auto;
+                min-height: 100%;
+                overflow-x: hidden;
+            }
+            body.drawer-locked {
+                overflow: hidden !important;
+            }
+
+            #app-shell {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                width: 100%;
+                overflow-x: hidden;
+            }
+
+            /* Mobile Top App Bar */
+            .mobile-top-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #0f172a;
+                color: #ffffff;
+                padding: 12px 16px;
+                position: sticky;
+                top: 0;
+                z-index: 9999;
+                border-bottom: 1px solid #1e293b;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                padding-top: max(12px, env(safe-area-inset-top));
+            }
+            .mobile-menu-btn {
+                background: #1e293b;
+                border: 1px solid #334155;
+                color: #ffffff;
+                font-size: 20px;
+                cursor: pointer;
+                padding: 6px 12px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+            }
+            .mobile-menu-btn:active {
+                background: #334155;
+            }
+            .mobile-brand {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 17px;
+                font-weight: 800;
+                color: #ffffff;
+            }
+            .mobile-brand-icon {
+                font-size: 19px;
+            }
+            .mobile-user-pill {
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+            }
+            .mobile-avatar {
+                width: 34px;
+                height: 34px;
+                background: var(--primary);
+                color: #ffffff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                font-size: 14px;
+                border: 2px solid #38bdf8;
+            }
+
+            /* Off-Canvas Drawer Sidebar */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 290px;
+                max-width: 85vw;
+                height: 100%;
+                z-index: 10002;
+                transform: translateX(-100%);
+                transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+                box-shadow: none;
+                overflow-y: auto;
+                padding: 20px 16px;
+                padding-bottom: max(30px, env(safe-area-inset-bottom));
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 12px 0 30px rgba(0,0,0,0.5);
+            }
+            .sidebar-close-btn {
+                display: block;
+                background: #1e293b;
+                color: #94a3b8;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 700;
+                padding: 4px 10px;
+                cursor: pointer;
+                line-height: 1;
+            }
+            .sidebar-close-btn:active {
+                background: #334155;
+                color: #ffffff;
+            }
+
+            /* Backdrop Overlay */
+            .drawer-backdrop {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(15, 23, 42, 0.7);
+                backdrop-filter: blur(3px);
+                -webkit-backdrop-filter: blur(3px);
+                z-index: 10001;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.25s ease;
+            }
+            .drawer-backdrop.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            /* Main Content on Mobile */
+            .content {
+                padding: 16px 14px;
+                padding-bottom: max(88px, calc(74px + env(safe-area-inset-bottom)));
+                overflow-y: visible;
+                width: 100%;
+            }
+            .page-header {
+                font-size: 20px;
+                margin-bottom: 14px;
+            }
+
+            /* Mobile Bottom Navigation Bar */
+            .mobile-bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #ffffff;
+                border-top: 1px solid #e2e8f0;
+                box-shadow: 0 -4px 16px rgba(0,0,0,0.07);
+                z-index: 9998;
+                justify-content: space-around;
+                align-items: center;
+                height: 62px;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .bottom-nav-item {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: transparent;
+                border: none;
+                color: #64748b;
+                padding: 6px 0;
+                cursor: pointer;
+                font-family: inherit;
+                transition: all 0.15s;
+                height: 100%;
+            }
+            .bottom-nav-item:active {
+                background: #f1f5f9;
+            }
+            .bottom-nav-icon {
+                font-size: 19px;
+                margin-bottom: 2px;
+                transition: transform 0.15s;
+            }
+            .bottom-nav-label {
+                font-size: 11px;
+                font-weight: 700;
+            }
+            .bottom-nav-item.active {
+                color: var(--primary);
+            }
+            .bottom-nav-item.active .bottom-nav-icon {
+                transform: scale(1.15);
+            }
+
+            /* Mobile Stats Cards */
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 18px;
+            }
+            .stat-card {
+                padding: 12px 8px;
+                border-radius: 10px;
+                text-align: center;
+            }
+            .stat-title {
+                font-size: 11px;
+                margin-bottom: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .stat-val {
+                font-size: 22px;
+            }
+
+            /* Mobile Cards */
+            .card {
+                padding: 16px 14px;
+                border-radius: 12px;
+                margin-bottom: 16px;
+            }
+            .card-title {
+                font-size: 15px;
+                flex-direction: row;
+                margin-bottom: 12px;
+            }
+
+            /* Forms & Inputs */
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .form-group {
+                margin-bottom: 14px;
+            }
+            .form-control, .filter-box input, .filter-box select {
+                font-size: 16px !important; /* Prevents auto-zoom in iOS Safari */
+                padding: 11px 12px;
+                border-radius: 8px;
+                width: 100%;
+            }
+            .btn-submit {
+                width: 100%;
+                justify-content: center;
+                padding: 13px;
+                font-size: 15px;
+            }
+
+            /* Filter Box */
+            .filter-box {
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .filter-box input, .filter-box select, .filter-box .btn-action {
+                width: 100%;
+                margin-right: 0;
+                justify-content: center;
+                min-height: 42px;
+                font-size: 14px;
+            }
+
+            /* Upload Dropzone */
+            .upload-dropzone {
+                padding: 22px 14px;
+            }
+            .upload-icon {
+                font-size: 34px;
+            }
+            .upload-text-main {
+                font-size: 14px;
+            }
+            .upload-text-sub {
+                font-size: 11px;
+            }
+
+            /* Tables on Mobile */
+            .table-responsive {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -4px;
+                padding: 0 4px 4px 4px;
+                border-radius: 8px;
+            }
+            .mobile-table-hint {
+                display: block;
+                font-size: 11px;
+                color: #64748b;
+                background: #f1f5f9;
+                padding: 6px 10px;
+                border-radius: 6px;
+                margin-bottom: 10px;
+                text-align: center;
+                font-weight: 600;
+            }
+            table {
+                min-width: 520px;
+                font-size: 12px;
+            }
+            th, td {
+                padding: 10px 8px;
+            }
+            .btn-action {
+                padding: 6px 10px;
+                font-size: 11px;
+                min-height: 34px;
+            }
+            .btn-pc {
+                display: none !important; /* Hide 'Open on PC' on mobile */
+            }
+
+            /* Toast Notifications on Mobile */
+            #toast-container {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            .toast {
+                max-width: 100%;
+                padding: 10px 14px;
+                font-size: 12px;
+            }
+
+            /* Auth Screen on Mobile */
+            #auth-screen {
+                padding: 16px;
+                min-height: 100vh;
+            }
+            .auth-card {
+                padding: 24px 18px;
+                border-radius: 14px;
+                width: 100%;
+            }
+            .auth-header h1 {
+                font-size: 22px;
+            }
+            .auth-input {
+                font-size: 16px !important; /* Prevents auto-zoom */
+                padding: 12px 14px;
+            }
+            .auth-btn {
+                padding: 13px;
+                font-size: 15px;
+            }
+            .demo-credentials-badge {
+                padding: 12px 10px;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+        }
+
+        /* Narrow Phones (<= 420px) */
+        @media (max-width: 420px) {
+            .stats-grid {
+                gap: 6px;
+            }
+            .stat-card {
+                padding: 10px 6px;
+            }
+            .stat-val {
+                font-size: 20px;
+            }
+            .stat-title {
+                font-size: 10px;
+            }
+            .page-header {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -606,26 +1004,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     <!-- MAIN APPLICATION SHELL (AFTER SUCCESSFUL LOGIN) -->
     <div id="app-shell">
-        <!-- Sidebar -->
+        <!-- Mobile Top App Bar (visible on mobile only) -->
+        <header class="mobile-top-bar" id="mobile-top-bar">
+            <button class="mobile-menu-btn" id="btn-mobile-menu" onclick="toggleMobileDrawer()" aria-label="Open Navigation Menu">
+                ☰
+            </button>
+            <div class="mobile-brand">
+                <span class="mobile-brand-icon">📚</span>
+                <span class="mobile-brand-text">StudyMate</span>
+            </div>
+            <div class="mobile-user-pill" onclick="toggleMobileDrawer()" title="View Student Profile">
+                <div class="mobile-avatar" id="mobile-avatar-initial">P</div>
+            </div>
+        </header>
+
+        <!-- Drawer Backdrop Overlay for Mobile -->
+        <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeMobileDrawer()"></div>
+
+        <!-- Sidebar (Desktop Sidebar & Mobile Drawer) -->
         <div class="sidebar">
             <div class="brand">
-                <h2>📚 StudyMate</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>📚 StudyMate</h2>
+                    <button class="sidebar-close-btn" onclick="closeMobileDrawer()" aria-label="Close menu">✕</button>
+                </div>
                 <p>Smart Material Finder</p>
             </div>
 
             <!-- Active User Profile Card -->
             <div class="user-profile-badge">
-                <div class="user-avatar" id="avatar-initial">S</div>
+                <div class="user-avatar" id="avatar-initial">P</div>
                 <div class="user-details">
-                    <div class="user-name" id="display-user-name">Demo Student</div>
+                    <div class="user-name" id="display-user-name">PARAS JAIN</div>
                     <div class="user-role" id="display-user-role">Student</div>
                 </div>
             </div>
 
-            <button class="nav-btn active" onclick="switchView('dashboard')">🏠 Dashboard</button>
-            <button class="nav-btn" onclick="switchView('add')">➕ Add Material</button>
-            <button class="nav-btn" onclick="switchView('search')">🔍 Search & Filter</button>
-            <button class="nav-btn" onclick="switchView('favorites')">⭐ Favorites</button>
+            <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">🏠 Dashboard</button>
+            <button class="nav-btn" data-view="add" onclick="switchView('add')">➕ Add Material</button>
+            <button class="nav-btn" data-view="search" onclick="switchView('search')">🔍 Search & Filter</button>
+            <button class="nav-btn" data-view="favorites" onclick="switchView('favorites')">⭐ Favorites</button>
 
             <div class="sidebar-footer">
                 <a href="/report" target="_blank" class="report-btn">📄 View Project Report</a>
@@ -661,19 +1079,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         <span>🕒 Recently Added Materials</span>
                         <button class="btn-action" onclick="fetchRecentMaterials()">🔄 Refresh</button>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Subject</th>
-                                <th>Sem</th>
-                                <th>Type</th>
-                                <th>Date Added</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-table-body"></tbody>
-                    </table>
+                    <div class="mobile-table-hint">👈 Swipe table horizontally to see all columns 👉</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Subject</th>
+                                    <th>Sem</th>
+                                    <th>Type</th>
+                                    <th>Date Added</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -687,8 +1108,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         <label>Select Study Material File *</label>
                         <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
                             <div class="upload-icon">📁</div>
-                            <div class="upload-text-main">Click here to browse or drag & drop file</div>
-                            <div class="upload-text-sub">Supports PDF, PPT, PPTX, DOC, DOCX, TXT, ZIP, Images</div>
+                            <div class="upload-text-main">Tap or click to choose study material</div>
+                            <div class="upload-text-sub">Select PDF, PPT, Word, Notes or Images from your device</div>
                             <input type="file" id="file-input" style="display: none;" onchange="handleFileSelected(event)">
                         </div>
 
@@ -787,20 +1208,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         <button class="btn-action" onclick="resetFilters()">🔄 Reset</button>
                     </div>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Subject</th>
-                                <th>Topic</th>
-                                <th>Sem</th>
-                                <th>Type</th>
-                                <th>Fav</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="search-table-body"></tbody>
-                    </table>
+                    <div class="mobile-table-hint">👈 Swipe table horizontally to see all columns 👉</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Subject</th>
+                                    <th>Topic</th>
+                                    <th>Sem</th>
+                                    <th>Type</th>
+                                    <th>Fav</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="search-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -808,22 +1232,45 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div id="view-favorites" class="view-section">
                 <h1 class="page-header">⭐ Favorite Study Materials</h1>
                 <div class="card">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Subject</th>
-                                <th>Topic</th>
-                                <th>Sem</th>
-                                <th>Type</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fav-table-body"></tbody>
-                    </table>
+                    <div class="mobile-table-hint">👈 Swipe table horizontally to see all columns 👉</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Subject</th>
+                                    <th>Topic</th>
+                                    <th>Sem</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fav-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Mobile Bottom Navigation Bar (visible on mobile only) -->
+        <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+            <button class="bottom-nav-item active" data-view="dashboard" onclick="switchView('dashboard')">
+                <span class="bottom-nav-icon">🏠</span>
+                <span class="bottom-nav-label">Home</span>
+            </button>
+            <button class="bottom-nav-item" data-view="add" onclick="switchView('add')">
+                <span class="bottom-nav-icon">➕</span>
+                <span class="bottom-nav-label">Upload</span>
+            </button>
+            <button class="bottom-nav-item" data-view="search" onclick="switchView('search')">
+                <span class="bottom-nav-icon">🔍</span>
+                <span class="bottom-nav-label">Search</span>
+            </button>
+            <button class="bottom-nav-item" data-view="favorites" onclick="switchView('favorites')">
+                <span class="bottom-nav-icon">⭐</span>
+                <span class="bottom-nav-label">Favorites</span>
+            </button>
+        </nav>
     </div>
 
     <script>
@@ -888,6 +1335,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
 
         function handleLogout() {
+            closeMobileDrawer();
             localStorage.removeItem('studymate_user');
             currentUser = null;
             document.getElementById('app-shell').style.display = 'none';
@@ -919,11 +1367,39 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             if (currentUser) {
                 document.getElementById('display-user-name').innerText = currentUser.full_name;
                 document.getElementById('display-user-role').innerText = `@${currentUser.username} • ${currentUser.role}`;
-                document.getElementById('avatar-initial').innerText = currentUser.full_name.charAt(0).toUpperCase();
+                const initial = currentUser.full_name.charAt(0).toUpperCase();
+                document.getElementById('avatar-initial').innerText = initial;
+                const mobInitial = document.getElementById('mobile-avatar-initial');
+                if (mobInitial) mobInitial.innerText = initial;
             }
 
             fetchStats();
             fetchRecentMaterials();
+        }
+
+        /* -------------------------------------------------------------
+           MOBILE DRAWER CONTROLS
+           ------------------------------------------------------------- */
+        function toggleMobileDrawer() {
+            const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.getElementById('drawer-backdrop');
+            if (!sidebar) return;
+            const isOpen = sidebar.classList.contains('open');
+            if (isOpen) {
+                closeMobileDrawer();
+            } else {
+                sidebar.classList.add('open');
+                if (backdrop) backdrop.classList.add('open');
+                document.body.classList.add('drawer-locked');
+            }
+        }
+
+        function closeMobileDrawer() {
+            const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.getElementById('drawer-backdrop');
+            if (sidebar) sidebar.classList.remove('open');
+            if (backdrop) backdrop.classList.remove('open');
+            document.body.classList.remove('drawer-locked');
         }
 
         /* -------------------------------------------------------------
@@ -992,10 +1468,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                if (el.getAttribute('data-view') === viewName) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+            document.querySelectorAll('.bottom-nav-item').forEach(el => {
+                if (el.getAttribute('data-view') === viewName) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
             
-            document.getElementById('view-' + viewName).classList.add('active');
-            event.target.classList.add('active');
+            const target = document.getElementById('view-' + viewName);
+            if (target) target.classList.add('active');
+
+            closeMobileDrawer();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const content = document.querySelector('.content');
+            if (content) content.scrollTo({ top: 0, behavior: 'smooth' });
 
             if (viewName === 'dashboard') {
                 fetchStats();
